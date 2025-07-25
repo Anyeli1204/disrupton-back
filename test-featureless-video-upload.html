@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIRI Engine Featureless Video Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .requirements {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .algorithm-info {
+            background-color: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #383d41;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .examples {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .examples h4 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .examples ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .examples li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 KIRI Engine Featureless Video Upload Test</h1>
+        
+        <div class="algorithm-info">
+            <h3>🔬 Featureless Object Scan Algorithm</h3>
+            <p><strong>Especializado para objetos sin características distintivas:</strong></p>
+            <ul>
+                <li>✅ Objetos lisos y esféricos</li>
+                <li>✅ Superficies uniformes</li>
+                <li>✅ Objetos reflectantes</li>
+                <li>✅ Formas geométricas simples</li>
+            </ul>
+        </div>
+        
+        <div class="examples">
+            <h4>🎯 Objetos Perfectos para Featureless:</h4>
+            <ul>
+                <li><strong>Esferas:</strong> Pelotas, globos, objetos esféricos</li>
+                <li><strong>Cilindros:</strong> Latas, botellas, tubos</li>
+                <li><strong>Cubos:</strong> Dados, cajas simples</li>
+                <li><strong>Objetos lisos:</strong> Sin texturas o patrones</li>
+                <li><strong>Superficies uniformes:</strong> Paredes lisas, objetos monocromáticos</li>
+                <li><strong>Objetos reflectantes:</strong> Espejos, metales pulidos</li>
+            </ul>
+        </div>
+        
+        <div class="requirements">
+            <h3>📋 Requisitos del Video:</h3>
+            <ul>
+                <li><strong>Resolución máxima:</strong> 1920x1080</li>
+                <li><strong>Duración máxima:</strong> 3 minutos</li>
+                <li><strong>Formatos soportados:</strong> MP4, AVI, MOV, WMV, FLV, WEBM</li>
+                <li><strong>Tamaño máximo:</strong> 500MB</li>
+            </ul>
+        </div>
+
+        <form id="featurelessVideoUploadForm">
+            <div class="form-group">
+                <label for="videoFile">📁 Archivo de Video:</label>
+                <input type="file" id="videoFile" name="videoFile" accept="video/*" required>
+            </div>
+
+            <div class="form-group">
+                <label for="fileFormat">📦 Formato del Archivo:</label>
+                <select id="fileFormat" name="fileFormat">
+                    <option value="OBJ" selected>OBJ</option>
+                    <option value="FBX">FBX</option>
+                    <option value="STL">STL</option>
+                    <option value="PLY">PLY</option>
+                    <option value="GLB">GLB</option>
+                    <option value="GLTF">GLTF</option>
+                    <option value="USDZ">USDZ</option>
+                    <option value="XYZ">XYZ</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn">🚀 Subir Video Featureless</button>
+        </form>
+
+        <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('featurelessVideoUploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const responseDiv = document.getElementById('response');
+            
+            // Deshabilitar botón y mostrar estado
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Procesando...';
+            responseDiv.style.display = 'none';
+            
+            try {
+                const formData = new FormData();
+                
+                // Agregar archivo de video
+                const videoFile = document.getElementById('videoFile').files[0];
+                if (!videoFile) {
+                    throw new Error('Por favor selecciona un archivo de video');
+                }
+                formData.append('videoFile', videoFile);
+                
+                // Agregar formato
+                formData.append('fileFormat', document.getElementById('fileFormat').value);
+                
+                // Mostrar información del archivo
+                showResponse('info', `📁 Archivo seleccionado: ${videoFile.name}\n📏 Tamaño: ${(videoFile.size / 1024 / 1024).toFixed(2)} MB\n🎯 Algoritmo: Featureless Object Scan\n⏱️ Enviando solicitud...`);
+                
+                // Enviar solicitud
+                const response = await fetch('/api/kiri-engine/upload-featureless-video', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('success', `✅ Video Featureless subido exitosamente!\n\n📋 Respuesta:\n${JSON.stringify(data, null, 2)}\n\n🔑 Serial del modelo: ${data.data?.serialize || 'N/A'}\n🎯 Tipo de cálculo: Featureless Object Scan (calculateType: 2)\n\n💡 Próximos pasos:\n1. Usa el serial para consultar el estado: GET /api/kiri-engine/model-status/${data.data?.serialize}\n2. Cuando esté listo, descarga el modelo: GET /api/kiri-engine/download-model/${data.data?.serialize}`);
+                } else {
+                    showResponse('error', `❌ Error al subir video Featureless:\n\n${JSON.stringify(data, null, 2)}`);
+                }
+                
+            } catch (error) {
+                showResponse('error', `❌ Error: ${error.message}`);
+            } finally {
+                // Restaurar botón
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Subir Video Featureless';
+            }
+        });
+        
+        function showResponse(type, message) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.className = `response ${type}`;
+            responseDiv.textContent = message;
+            responseDiv.style.display = 'block';
+        }
+        
+        // Validación de archivo
+        document.getElementById('videoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 500 * 1024 * 1024; // 500MB
+                if (file.size > maxSize) {
+                    alert('⚠️ El archivo es demasiado grande. Máximo 500MB permitido.');
+                    this.value = '';
+                }
+                
+                const validFormats = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm'];
+                const fileName = file.name.toLowerCase();
+                const isValidFormat = validFormats.some(format => fileName.endsWith(format));
+                
+                if (!isValidFormat) {
+                    alert('⚠️ Formato de archivo no soportado. Use: MP4, AVI, MOV, WMV, FLV, WEBM');
+                    this.value = '';
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

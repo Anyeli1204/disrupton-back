@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIRI Engine Video Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"], select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .requirements {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 KIRI Engine Video Upload Test</h1>
+        
+        <div class="requirements">
+            <h3>📋 Requisitos del Video:</h3>
+            <ul>
+                <li><strong>Resolución máxima:</strong> 1920x1080</li>
+                <li><strong>Duración máxima:</strong> 3 minutos</li>
+                <li><strong>Formatos soportados:</strong> MP4, AVI, MOV, WMV, FLV, WEBM</li>
+                <li><strong>Tamaño máximo:</strong> 500MB</li>
+            </ul>
+        </div>
+
+        <form id="videoUploadForm">
+            <div class="form-group">
+                <label for="videoFile">📁 Archivo de Video:</label>
+                <input type="file" id="videoFile" name="videoFile" accept="video/*" required>
+            </div>
+
+            <div class="form-group">
+                <label for="modelQuality">🎯 Calidad del Modelo:</label>
+                <select id="modelQuality" name="modelQuality">
+                    <option value="0">High (0)</option>
+                    <option value="1" selected>Medium (1)</option>
+                    <option value="2">Low (2)</option>
+                    <option value="3">Ultra (3)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="textureQuality">🖼️ Calidad de Textura:</label>
+                <select id="textureQuality" name="textureQuality">
+                    <option value="0">4K (0)</option>
+                    <option value="1" selected>2K (1)</option>
+                    <option value="2">1K (2)</option>
+                    <option value="3">8K (3)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="fileFormat">📦 Formato del Archivo:</label>
+                <select id="fileFormat" name="fileFormat">
+                    <option value="OBJ" selected>OBJ</option>
+                    <option value="FBX">FBX</option>
+                    <option value="STL">STL</option>
+                    <option value="PLY">PLY</option>
+                    <option value="GLB">GLB</option>
+                    <option value="GLTF">GLTF</option>
+                    <option value="USDZ">USDZ</option>
+                    <option value="XYZ">XYZ</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="isMask">🎭 Auto Object Masking:</label>
+                <select id="isMask" name="isMask">
+                    <option value="0">Off (0)</option>
+                    <option value="1" selected>On (1)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="textureSmoothing">✨ Texture Smoothing:</label>
+                <select id="textureSmoothing" name="textureSmoothing">
+                    <option value="0">Off (0)</option>
+                    <option value="1" selected>On (1)</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn">🚀 Subir Video</button>
+        </form>
+
+        <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('videoUploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const responseDiv = document.getElementById('response');
+            
+            // Deshabilitar botón y mostrar estado
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Procesando...';
+            responseDiv.style.display = 'none';
+            
+            try {
+                const formData = new FormData();
+                
+                // Agregar archivo de video
+                const videoFile = document.getElementById('videoFile').files[0];
+                if (!videoFile) {
+                    throw new Error('Por favor selecciona un archivo de video');
+                }
+                formData.append('videoFile', videoFile);
+                
+                // Agregar parámetros
+                formData.append('modelQuality', document.getElementById('modelQuality').value);
+                formData.append('textureQuality', document.getElementById('textureQuality').value);
+                formData.append('fileFormat', document.getElementById('fileFormat').value);
+                formData.append('isMask', document.getElementById('isMask').value);
+                formData.append('textureSmoothing', document.getElementById('textureSmoothing').value);
+                
+                // Mostrar información del archivo
+                showResponse('info', `📁 Archivo seleccionado: ${videoFile.name}\n📏 Tamaño: ${(videoFile.size / 1024 / 1024).toFixed(2)} MB\n⏱️ Enviando solicitud...`);
+                
+                // Enviar solicitud
+                const response = await fetch('/api/kiri-engine/upload-video', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('success', `✅ Video subido exitosamente!\n\n📋 Respuesta:\n${JSON.stringify(data, null, 2)}\n\n🔑 Serial del modelo: ${data.data?.serialize || 'N/A'}\n\n💡 Próximos pasos:\n1. Usa el serial para consultar el estado: GET /api/kiri-engine/model-status/${data.data?.serialize}\n2. Cuando esté listo, descarga el modelo: GET /api/kiri-engine/download-model/${data.data?.serialize}`);
+                } else {
+                    showResponse('error', `❌ Error al subir video:\n\n${JSON.stringify(data, null, 2)}`);
+                }
+                
+            } catch (error) {
+                showResponse('error', `❌ Error: ${error.message}`);
+            } finally {
+                // Restaurar botón
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Subir Video';
+            }
+        });
+        
+        function showResponse(type, message) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.className = `response ${type}`;
+            responseDiv.textContent = message;
+            responseDiv.style.display = 'block';
+        }
+        
+        // Validación de archivo
+        document.getElementById('videoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 500 * 1024 * 1024; // 500MB
+                if (file.size > maxSize) {
+                    alert('⚠️ El archivo es demasiado grande. Máximo 500MB permitido.');
+                    this.value = '';
+                }
+                
+                const validFormats = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm'];
+                const fileName = file.name.toLowerCase();
+                const isValidFormat = validFormats.some(format => fileName.endsWith(format));
+                
+                if (!isValidFormat) {
+                    alert('⚠️ Formato de archivo no soportado. Use: MP4, AVI, MOV, WMV, FLV, WEBM');
+                    this.value = '';
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

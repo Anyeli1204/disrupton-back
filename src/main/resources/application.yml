@@ -1,0 +1,31 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: kiri-engine-integration
+  
+  # Configuración para archivos multipart
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 500MB
+      file-size-threshold: 2KB
+
+# Configuración de KIRI Engine API
+kiri:
+  engine:
+    api:
+      key: ${KIRI_ENGINE_API_KEY:kiri_nEafHXmu9nBj6PTf_Zt8mFfWiTXb0EUU833AbR2Gz00}
+      base-url: ${KIRI_ENGINE_BASE_URL:https://api.kiriengine.app/api/v1}
+
+# Configuración de logging
+logging:
+  level:
+    com.disrupton: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n" 
