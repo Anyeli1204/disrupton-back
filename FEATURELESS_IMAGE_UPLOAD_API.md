@@ -193,25 +193,3 @@ print(response.json())
 4. **Calidad**: Proporciona mejores resultados para objetos lisos que la fotogrametría estándar.
 
 5. **Límites de API**: Respeta los límites de la API de KIRI Engine para evitar errores de rate limiting.
-
-## Ejemplos de Objetos por Tipo
-
-### ✅ Perfectos para Featureless:
-- Pelota de tenis
-- Botella de agua
-- Lata de refresco
-- Esfera de cristal
-- Cubo de Rubik (sin stickers)
-- Cilindro de metal
-- Espejo redondo
-- Dado liso
-
-### ❌ Mejor usar Photogrammetry:
-- Mueble de madera
-- Ropa con texturas
-- Fruta con detalles
-- Escultura con relieves
-- Joya con gemas
-- Herramienta con marcas
-- Libro con páginas
-- Planta con hojas 
