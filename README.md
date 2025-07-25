@@ -434,11 +434,3 @@ PUT    /api/firebase/cultural/objects/{objectId}/status # Actualizar estado
 POST   /api/firebase/cultural/objects/{objectId}/like  # Dar like
 DELETE /api/firebase/cultural/objects/{objectId}/like  # Quitar like
 ```
-
-### **Próximos Pasos:**
-1. **Configurar proyecto Firebase** ✅ (Ver `FIREBASE_SETUP.md`)
-2. **Implementar autenticación** ✅ (Firebase Auth integrado)
-3. **Crear estructura de Firestore** ✅ (Servicios implementados)
-4. **Configurar reglas de seguridad** ✅ (Documentadas)
-5. **Integrar con KIRI Engine API** ✅ (Ya implementado)
-6. **Desarrollar aplicación móvil** 🔄 (En progreso) 
