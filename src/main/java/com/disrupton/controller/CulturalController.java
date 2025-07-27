@@ -34,7 +34,7 @@ public class CulturalController {
             @RequestParam(value = "story", required = false) String story,
             @RequestParam(value = "captureNotes", required = false) String captureNotes,
             @RequestParam(value = "fileFormat", defaultValue = "GLB") String fileFormat,
-            @RequestParam("userId") Long userId) {
+            @RequestParam("userId") String userId) {
         
         try {
             log.info("Recibida solicitud para subir objeto cultural: {}", name);
@@ -95,11 +95,12 @@ public class CulturalController {
     /**
      * Agregar comentario a un objeto cultural
      */
+
     @PostMapping("/objects/{id}/comments")
     public ResponseEntity<Comment> addComment(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("content") String content,
-            @RequestParam("userId") Long userId,
+            @RequestParam("userId") String userId,
             @RequestParam(value = "parentCommentId", required = false) Long parentCommentId) {
         
         Comment comment = culturalService.addComment(id, content, userId, parentCommentId);
@@ -109,11 +110,12 @@ public class CulturalController {
     /**
      * Agregar reacción a un objeto cultural
      */
+
     @PostMapping("/objects/{id}/reactions")
     public ResponseEntity<Reaction> addReaction(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("type") String type,
-            @RequestParam("userId") Long userId) {
+            @RequestParam("userId") String userId) {
         
         Reaction reaction = culturalService.addReaction(id, type, userId);
         return ResponseEntity.ok(reaction);
@@ -122,6 +124,7 @@ public class CulturalController {
     /**
      * Obtener objetos pendientes de moderación (solo moderadores)
      */
+
     @GetMapping("/moderation/pending")
     public ResponseEntity<List<CulturalObject>> getPendingObjects(
             @RequestParam("moderatorId") Long moderatorId) {
@@ -135,8 +138,8 @@ public class CulturalController {
      */
     @PostMapping("/moderation/{id}/review")
     public ResponseEntity<CulturalObject> reviewObject(
-            @PathVariable Long id,
-            @RequestParam("moderatorId") Long moderatorId,
+            @PathVariable String id,
+            @RequestParam("moderatorId") String moderatorId,
             @RequestParam("status") String status,
             @RequestParam(value = "feedback", required = false) String feedback) {
         

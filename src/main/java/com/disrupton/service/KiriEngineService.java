@@ -364,7 +364,7 @@ public class KiriEngineService {
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.setBearerAuth(config.getApiKey());
+        headers.set("x-api-key", config.getApiKey());
         return headers;
     }
     

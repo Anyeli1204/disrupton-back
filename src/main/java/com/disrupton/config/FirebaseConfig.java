@@ -1,9 +1,12 @@
 package com.disrupton.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.cloud.FirestoreClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
@@ -30,8 +33,8 @@ public class FirebaseConfig {
             
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .setStorageBucket("disrupton2025.appspot.com") // Cambiar por tu bucket
-                    .setProjectId("disrupton2025") // Cambiar por tu project ID
+                    .setStorageBucket("disrupton.appspot.com") // Cambiar por tu bucket
+                    .setProjectId("disrupton-43b23") // Cambiar por tu project ID
                     .build();
 
             if (FirebaseApp.getApps().isEmpty()) {
@@ -45,5 +48,10 @@ public class FirebaseConfig {
             log.error("❌ Error al inicializar Firebase Admin SDK: {}", e.getMessage());
             throw e;
         }
+    }
+    @Bean
+    public Firestore firestore() {
+        log.info("🔥 Creando bean de Firestore...");
+        return FirestoreClient.getFirestore();
     }
 } 

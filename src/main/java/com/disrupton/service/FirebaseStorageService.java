@@ -1,5 +1,6 @@
 package com.disrupton.service;
 
+import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,7 @@ import java.util.UUID;
 public class FirebaseStorageService {
 
     private final Storage storage = StorageOptions.getDefaultInstance().getService();
-    private static final String BUCKET_NAME = "disrupton2025.appspot.com"; // Cambiar por tu bucket
+    private static final String BUCKET_NAME = "disrupton.appspot.com"; // Cambiar por tu bucket
 
     /**
      * Sube un archivo a Firebase Storage

@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 public class UserDto {
     private String name;
     private String email;
-    private String role; // student, moderator, admin
+    private String role; // student, moderator, admin, AGENTE_CULTURAL
     private Timestamp createdAt;
 } 

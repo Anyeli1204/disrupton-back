@@ -3,6 +3,7 @@ package com.disrupton.service;
 import com.disrupton.dto.CommentDto;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import com.google.firebase.cloud.FirestoreClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class FirebaseCommentService {
     /**
      * Guarda un nuevo comentario en Firestore
      */
+
     public CommentDto saveComment(CommentDto comment) throws ExecutionException, InterruptedException {
         log.info("💬 Guardando comentario para objeto: {}", comment.getObjectId());
         

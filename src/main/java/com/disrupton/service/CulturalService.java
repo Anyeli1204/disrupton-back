@@ -47,10 +47,8 @@ public class CulturalService {
         culturalObject.setUpdatedAt(LocalDateTime.now());
         
         // TODO: Obtener usuario real desde base de datos
-        User contributor = new User();
-        contributor.setId(request.getUserId());
-        culturalObject.setContributor(contributor);
-        
+        culturalObject.setContributor(request.getUserId());
+
         // Procesar imágenes con KIRI Engine
         ImageUploadRequest kiriRequest = new ImageUploadRequest();
         kiriRequest.setImagesFiles(request.getImagesFiles());
@@ -106,7 +104,7 @@ public class CulturalService {
     /**
      * Agregar comentario
      */
-    public Comment addComment(Long objectId, String content, Long userId, Long parentCommentId) {
+    public Comment addComment(String objectId, String content, String userId, Long parentCommentId) {
         log.info("Agregando comentario al objeto cultural {} por usuario {}", objectId, userId);
         
         Comment comment = new Comment();
@@ -133,7 +131,7 @@ public class CulturalService {
     /**
      * Agregar reacción
      */
-    public Reaction addReaction(Long objectId, String type, Long userId) {
+    public Reaction addReaction(String objectId, String type, String userId) {
         log.info("Agregando reacción {} al objeto cultural {} por usuario {}", type, objectId, userId);
         
         Reaction reaction = new Reaction();
@@ -143,11 +141,11 @@ public class CulturalService {
         // TODO: Obtener usuario y objeto cultural reales
         User user = new User();
         user.setId(userId);
-        reaction.setUser(user);
+        reaction.setUser(user.getId());
         
         CulturalObject culturalObject = new CulturalObject();
         culturalObject.setId(objectId);
-        reaction.setCulturalObject(culturalObject);
+        reaction.setCulturalObject(culturalObject.getId());
         
         // TODO: Guardar en base de datos
         // reactionRepository.save(reaction);
@@ -169,7 +167,7 @@ public class CulturalService {
     /**
      * Revisar objeto cultural (aprobar/rechazar)
      */
-    public CulturalObject reviewObject(Long objectId, Long moderatorId, String status, String feedback) {
+    public CulturalObject reviewObject(String objectId, String moderatorId, String status, String feedback) {
         log.info("Revisando objeto cultural {} por moderador {} con estado: {}", 
                 objectId, moderatorId, status);
         
