@@ -1,6 +1,7 @@
 package com.disrupton.service;
 
 import com.disrupton.model.*;
+import com.disrupton.dto.LocationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,11 +18,13 @@ import java.util.HashMap;
 public class CulturalService {
     
     private final KiriEngineService kiriEngineService;
+    private final GeolocalizacionService geolocalizacionService;
+    private final IPGeolocationService ipGeolocationService;
     
     /**
      * Subir objeto cultural completo con imágenes y contexto
      */
-    public CulturalObject uploadCulturalObject(CulturalUploadRequest request) throws IOException {
+    public CulturalObject uploadCulturalObject(CulturalUploadRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) throws IOException {
         log.info("Procesando objeto cultural: {}", request.getName());
         
         // Validar información cultural
@@ -45,6 +48,9 @@ public class CulturalService {
         culturalObject.setStatus(CulturalObject.Status.PENDING_REVIEW.name());
         culturalObject.setCreatedAt(LocalDateTime.now());
         culturalObject.setUpdatedAt(LocalDateTime.now());
+        
+        // Procesar información de ubicación
+        processLocationInfo(culturalObject, request, httpRequest);
         
         // TODO: Obtener usuario real desde base de datos
         User contributor = new User();
@@ -210,4 +216,100 @@ public class CulturalService {
         
         return stats;
     }
+    
+    /**
+     * Procesa la información de ubicación del objeto cultural
+     * GARANTIZA que siempre se asigne una ubicación al objeto
+     */
+    private void processLocationInfo(CulturalObject culturalObject, CulturalUploadRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            LocationDto locationInfo = null;
+            
+            // Prioridad 1: Si se solicita geolocalización automática explícitamente
+            if (Boolean.TRUE.equals(request.getAutoLocation())) {
+                log.info("Solicitada geolocalización automática para el objeto cultural");
+                locationInfo = ipGeolocationService.getLocationFromIP(httpRequest);
+            }
+            // Prioridad 2: Si se proporcionan coordenadas, usar reverse geocoding
+            else if (request.getLatitude() != null && request.getLongitude() != null) {
+                log.info("Obteniendo información de ubicación desde coordenadas: lat={}, lon={}", 
+                        request.getLatitude(), request.getLongitude());
+                locationInfo = geolocalizacionService.reverseGeocode(request.getLatitude(), request.getLongitude());
+            }
+            // Prioridad 3: Si se proporciona una dirección, usar forward geocoding
+            else if (request.getAddress() != null && !request.getAddress().trim().isEmpty()) {
+                log.info("Obteniendo coordenadas desde dirección: {}", request.getAddress());
+                locationInfo = geolocalizacionService.forwardGeocode(request.getAddress());
+            }
+            // Prioridad 4: Geolocalización automática por defecto (SIEMPRE se ejecuta)
+            else {
+                log.info("No se proporcionó ubicación específica, usando geolocalización automática por defecto");
+                locationInfo = ipGeolocationService.getLocationFromIP(httpRequest);
+            }
+            
+            // GARANTIZAR que siempre se asigne ubicación
+            if (locationInfo != null) {
+                culturalObject.setLatitude(locationInfo.getLatitude());
+                culturalObject.setLongitude(locationInfo.getLongitude());
+                culturalObject.setDepartment(locationInfo.getDepartment());
+                culturalObject.setDistrict(locationInfo.getDistrict());
+                culturalObject.setStreet(locationInfo.getStreet());
+                culturalObject.setCity(locationInfo.getCity());
+                culturalObject.setCountry(locationInfo.getCountry());
+                culturalObject.setPostalCode(locationInfo.getPostalCode());
+                culturalObject.setFullAddress(locationInfo.getFullAddress());
+                
+                log.info("Información de ubicación asignada al objeto cultural: {}", locationInfo.getFullAddress());
+            } else {
+                // Fallback final: ubicación por defecto
+                log.warn("No se pudo obtener información de ubicación, usando ubicación por defecto");
+                LocationDto defaultLocation = getDefaultLocation();
+                culturalObject.setLatitude(defaultLocation.getLatitude());
+                culturalObject.setLongitude(defaultLocation.getLongitude());
+                culturalObject.setDepartment(defaultLocation.getDepartment());
+                culturalObject.setDistrict(defaultLocation.getDistrict());
+                culturalObject.setStreet(defaultLocation.getStreet());
+                culturalObject.setCity(defaultLocation.getCity());
+                culturalObject.setCountry(defaultLocation.getCountry());
+                culturalObject.setPostalCode(defaultLocation.getPostalCode());
+                culturalObject.setFullAddress(defaultLocation.getFullAddress());
+                
+                log.info("Ubicación por defecto asignada al objeto cultural: {}", defaultLocation.getFullAddress());
+            }
+            
+        } catch (Exception e) {
+            log.error("Error al procesar información de ubicación: {}", e.getMessage(), e);
+            // Fallback final en caso de error: ubicación por defecto
+            log.info("Aplicando fallback de ubicación por defecto debido a error");
+            LocationDto defaultLocation = getDefaultLocation();
+            culturalObject.setLatitude(defaultLocation.getLatitude());
+            culturalObject.setLongitude(defaultLocation.getLongitude());
+            culturalObject.setDepartment(defaultLocation.getDepartment());
+            culturalObject.setDistrict(defaultLocation.getDistrict());
+            culturalObject.setStreet(defaultLocation.getStreet());
+            culturalObject.setCity(defaultLocation.getCity());
+            culturalObject.setCountry(defaultLocation.getCountry());
+            culturalObject.setPostalCode(defaultLocation.getPostalCode());
+            culturalObject.setFullAddress(defaultLocation.getFullAddress());
+            
+            log.info("Ubicación por defecto asignada al objeto cultural (fallback): {}", defaultLocation.getFullAddress());
+        }
+    }
+    
+    /**
+     * Retorna ubicación por defecto (Lima, Perú)
+     * Se usa como fallback cuando no se puede obtener ubicación
+     */
+    private LocationDto getDefaultLocation() {
+        LocationDto defaultLocation = new LocationDto();
+        defaultLocation.setLatitude(-12.0464);
+        defaultLocation.setLongitude(-77.0428);
+        defaultLocation.setCity("Lima");
+        defaultLocation.setCountry("Perú");
+        defaultLocation.setDepartment("Lima");
+        defaultLocation.setFullAddress("Lima, Perú (ubicación por defecto)");
+        return defaultLocation;
+    }
+    
+
 } 
