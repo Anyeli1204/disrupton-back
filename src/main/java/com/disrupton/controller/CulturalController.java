@@ -16,9 +16,9 @@ import java.util.List;
 @Slf4j
 @CrossOrigin(origins = "*")
 public class CulturalController {
-    
+
     private final CulturalService culturalService;
-    
+
     /**
      * Subir objeto cultural con imágenes y contexto
      */
@@ -35,10 +35,10 @@ public class CulturalController {
             @RequestParam(value = "captureNotes", required = false) String captureNotes,
             @RequestParam(value = "fileFormat", defaultValue = "GLB") String fileFormat,
             @RequestParam("userId") String userId) {
-        
+
         try {
             log.info("Recibida solicitud para subir objeto cultural: {}", name);
-            
+
             // Crear objeto de solicitud
             CulturalUploadRequest request = new CulturalUploadRequest();
             request.setImagesFiles(imagesFiles);
@@ -52,12 +52,12 @@ public class CulturalController {
             request.setCaptureNotes(captureNotes);
             request.setFileFormat(fileFormat);
             request.setUserId(userId);
-            
+
             // Procesar solicitud
             CulturalObject result = culturalService.uploadCulturalObject(request);
-            
+
             return ResponseEntity.ok(result);
-            
+
         } catch (IllegalArgumentException e) {
             log.error("Error de validación: {}", e.getMessage());
             return ResponseEntity.badRequest().body(
@@ -68,7 +68,7 @@ public class CulturalController {
                     new ErrorResponse("Error interno del servidor", e.getMessage()));
         }
     }
-    
+
     /**
      * Obtener todos los objetos culturales aprobados
      */
@@ -78,11 +78,11 @@ public class CulturalController {
             @RequestParam(value = "culturalType", required = false) String culturalType,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
-        
+
         List<CulturalObject> objects = culturalService.getCulturalObjects(region, culturalType, page, size);
         return ResponseEntity.ok(objects);
     }
-    
+
     /**
      * Obtener objeto cultural por ID
      */
@@ -91,7 +91,7 @@ public class CulturalController {
         CulturalObject object = culturalService.getCulturalObjectById(id);
         return ResponseEntity.ok(object);
     }
-    
+
     /**
      * Agregar comentario a un objeto cultural
      */
@@ -101,12 +101,12 @@ public class CulturalController {
             @PathVariable String id,
             @RequestParam("content") String content,
             @RequestParam("userId") String userId,
-            @RequestParam(value = "parentCommentId", required = false) Long parentCommentId) {
-        
+            @RequestParam(value = "parentCommentId", required = false) String parentCommentId) {
+
         Comment comment = culturalService.addComment(id, content, userId, parentCommentId);
         return ResponseEntity.ok(comment);
     }
-    
+
     /**
      * Agregar reacción a un objeto cultural
      */
@@ -116,11 +116,11 @@ public class CulturalController {
             @PathVariable String id,
             @RequestParam("type") String type,
             @RequestParam("userId") String userId) {
-        
+
         Reaction reaction = culturalService.addReaction(id, type, userId);
         return ResponseEntity.ok(reaction);
     }
-    
+
     /**
      * Obtener objetos pendientes de moderación (solo moderadores)
      */
@@ -128,11 +128,11 @@ public class CulturalController {
     @GetMapping("/moderation/pending")
     public ResponseEntity<List<CulturalObject>> getPendingObjects(
             @RequestParam("moderatorId") Long moderatorId) {
-        
+
         List<CulturalObject> objects = culturalService.getPendingObjects(moderatorId);
         return ResponseEntity.ok(objects);
     }
-    
+
     /**
      * Aprobar o rechazar objeto cultural (solo moderadores)
      */
@@ -142,11 +142,11 @@ public class CulturalController {
             @RequestParam("moderatorId") String moderatorId,
             @RequestParam("status") String status,
             @RequestParam(value = "feedback", required = false) String feedback) {
-        
+
         CulturalObject object = culturalService.reviewObject(id, moderatorId, status, feedback);
         return ResponseEntity.ok(object);
     }
-    
+
     /**
      * Obtener estadísticas culturales
      */
@@ -154,19 +154,19 @@ public class CulturalController {
     public ResponseEntity<?> getStatistics() {
         return ResponseEntity.ok(culturalService.getStatistics());
     }
-    
+
     /**
      * Clase para respuestas de error
      */
     public static class ErrorResponse {
         private String error;
         private String message;
-        
+
         public ErrorResponse(String error, String message) {
             this.error = error;
             this.message = message;
         }
-        
+
         public String getError() { return error; }
         public void setError(String error) { this.error = error; }
         public String getMessage() { return message; }
