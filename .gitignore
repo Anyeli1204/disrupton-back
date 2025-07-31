@@ -62,3 +62,20 @@ Thumbs.db
 ### Maven ###
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.properties 
+
+### Firebase ###
+# Firebase Service Account credentials
+src/main/resources/firebase-service-account.json
+src/main/resources/firebase-service-account-*.json
+*.json
+!package.json
+!tsconfig.json
+!angular.json
+!firebase.json
+!firestore.rules
+!storage.rules
+
+# Firebase local files
+.firebase/
+firebase-debug.log
+firebase-debug.*.log 
