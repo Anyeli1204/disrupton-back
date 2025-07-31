@@ -3,6 +3,7 @@ package com.disrupton.service;
 import com.disrupton.dto.ReactionDto;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,10 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FirebaseReactionService {
 
-    private final Firestore db = FirestoreClient.getFirestore();
+    private final Firestore db;
     private static final String COLLECTION_NAME = "reactions";
 
     /**
@@ -26,6 +28,9 @@ public class FirebaseReactionService {
         // Crear documento con ID automático
         DocumentReference docRef = db.collection(COLLECTION_NAME).document();
         String reactionId = docRef.getId();
+        
+        // Asignar el ID generado a la reacción
+        reaction.setId(reactionId);
         
         ApiFuture<WriteResult> future = docRef.set(reaction);
         
@@ -50,6 +55,8 @@ public class FirebaseReactionService {
         List<ReactionDto> reactions = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             ReactionDto reaction = document.toObject(ReactionDto.class);
+            // Asignar el ID del documento
+            reaction.setId(document.getId());
             reactions.add(reaction);
         }
         
@@ -72,6 +79,8 @@ public class FirebaseReactionService {
         List<ReactionDto> reactions = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             ReactionDto reaction = document.toObject(ReactionDto.class);
+            // Asignar el ID del documento
+            reaction.setId(document.getId());
             reactions.add(reaction);
         }
         
@@ -96,6 +105,8 @@ public class FirebaseReactionService {
         if (!querySnapshot.isEmpty()) {
             DocumentSnapshot document = querySnapshot.getDocuments().get(0);
             ReactionDto reaction = document.toObject(ReactionDto.class);
+            // Asignar el ID del documento
+            reaction.setId(document.getId());
             log.info("✅ Reacción encontrada: {}", reaction.getType());
             return reaction;
         } else {

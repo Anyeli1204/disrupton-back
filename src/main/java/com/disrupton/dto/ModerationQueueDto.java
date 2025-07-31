@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModerationQueueDto {
+    private String id; // ID del documento en Firestore
     private String objectId; // reference a cultural_objects
     private String submittedBy; // reference a users
     private String status; // pending, in_review, approved, rejected

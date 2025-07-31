@@ -1,18 +1,13 @@
 package com.disrupton.model;
 
 import lombok.Data;
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Entity
-@Table(name = "cultural_objects")
 @Data
 public class CulturalObject {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id; // ID del documento en Firestore
     
     // Información del objeto
     private String name;
@@ -33,20 +28,9 @@ public class CulturalObject {
     private LocalDateTime updatedAt;
     private String status; // DRAFT, PENDING_REVIEW, APPROVED, REJECTED
     
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User contributor; // Estudiante que contribuyó
-    
-    @ManyToOne
-    @JoinColumn(name = "moderator_id")
-    private User moderator; // Moderador que revisó
-    
-    @OneToMany(mappedBy = "culturalObject", cascade = CascadeType.ALL)
-    private List<Comment> comments;
-    
-    @OneToMany(mappedBy = "culturalObject", cascade = CascadeType.ALL)
-    private List<Reaction> reactions;
+    // Referencias a usuarios (IDs en lugar de objetos)
+    private String contributorId; // ID del estudiante que contribuyó
+    private String moderatorId; // ID del moderador que revisó
     
     // Información de captura
     private Integer numberOfImages;

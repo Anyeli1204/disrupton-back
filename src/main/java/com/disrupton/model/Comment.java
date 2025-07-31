@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 @Data
 public class Comment {
     
-    private Long id;
+    private String id; // ID del documento en Firestore
     private String content;
     private LocalDateTime createdAt;
-    private User author;
-    private CulturalObject culturalObject;
+    private String authorId; // ID del usuario autor
+    private String culturalObjectId; // ID del objeto cultural
     private Boolean isModerated;
     
     // Para respuestas anidadas
-    private Long parentCommentId;
+    private String parentCommentId;
 } 

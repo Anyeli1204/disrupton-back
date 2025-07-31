@@ -3,6 +3,7 @@ package com.disrupton.service;
 import com.disrupton.dto.UserDto;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,10 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FirebaseUserService {
 
-    private final Firestore db = FirestoreClient.getFirestore();
+    private final Firestore db;
     private static final String COLLECTION_NAME = "users";
 
     /**
@@ -31,6 +33,9 @@ public class FirebaseUserService {
         // Crear documento con ID automático
         DocumentReference docRef = db.collection(COLLECTION_NAME).document();
         String userId = docRef.getId();
+        
+        // Asignar el ID generado al usuario
+        user.setId(userId);
         
         ApiFuture<WriteResult> future = docRef.set(user);
         
@@ -52,6 +57,8 @@ public class FirebaseUserService {
         
         if (document.exists()) {
             UserDto user = document.toObject(UserDto.class);
+            // Asignar el ID del documento
+            user.setId(document.getId());
             log.info("✅ Usuario encontrado: {}", user.getEmail());
             return user;
         } else {
@@ -76,6 +83,8 @@ public class FirebaseUserService {
         if (!querySnapshot.isEmpty()) {
             DocumentSnapshot document = querySnapshot.getDocuments().get(0);
             UserDto user = document.toObject(UserDto.class);
+            // Asignar el ID del documento
+            user.setId(document.getId());
             log.info("✅ Usuario encontrado por email: {}", email);
             return user;
         } else {
@@ -96,6 +105,8 @@ public class FirebaseUserService {
         List<UserDto> users = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             UserDto user = document.toObject(UserDto.class);
+            // Asignar el ID del documento
+            user.setId(document.getId());
             users.add(user);
         }
         

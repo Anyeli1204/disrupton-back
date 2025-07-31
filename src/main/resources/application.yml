@@ -22,6 +22,16 @@ kiri:
       key: ${KIRI_ENGINE_API_KEY:kiri_nEafHXmu9nBj6PTf_Zt8mFfWiTXb0EUU833AbR2Gz00}
       base-url: ${KIRI_ENGINE_BASE_URL:https://api.kiriengine.app/api/v1}
 
+# Configuración de Firebase
+firebase:
+  project:
+    id: ${FIREBASE_PROJECT_ID:disrupton2025}
+    storage:
+      bucket: ${FIREBASE_STORAGE_BUCKET:disrupton2025.firebasestorage.app}
+  service:
+    account:
+      file: ${FIREBASE_SERVICE_ACCOUNT_FILE:firebase-service-account.json}
+
 # Configuración de logging
 logging:
   level:

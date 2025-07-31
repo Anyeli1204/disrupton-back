@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDto {
+    private String id; // ID del documento en Firestore
     private String name;
     private String email;
     private String role; // student, moderator, admin

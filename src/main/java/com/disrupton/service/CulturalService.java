@@ -1,6 +1,7 @@
 package com.disrupton.service;
 
 import com.disrupton.model.*;
+import com.disrupton.dto.CulturalObjectDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,34 @@ import java.util.HashMap;
 public class CulturalService {
     
     private final KiriEngineService kiriEngineService;
+    private final FirebaseCulturalObjectService firebaseCulturalObjectService;
+    
+    /**
+     * Guardar objeto cultural en Firebase
+     */
+    public CulturalObject saveCulturalObject(CulturalObject culturalObject) {
+        try {
+            log.info("🏺 Guardando objeto cultural: {}", culturalObject.getName());
+            
+            // Convertir CulturalObject a CulturalObjectDto
+            CulturalObjectDto dto = new CulturalObjectDto();
+            dto.setTitle(culturalObject.getName());
+            dto.setDescription(culturalObject.getDescription());
+            dto.setCreatedBy(culturalObject.getContributorId());
+            dto.setStatus(culturalObject.getStatus());
+            dto.setModelUrl(culturalObject.getModelUrl());
+            
+            CulturalObjectDto savedDto = firebaseCulturalObjectService.saveCulturalObject(dto);
+            
+            // Asignar el ID generado al objeto cultural
+            culturalObject.setId(savedDto.getId());
+            return culturalObject;
+            
+        } catch (Exception e) {
+            log.error("❌ Error al guardar objeto cultural: {}", e.getMessage(), e);
+            throw new RuntimeException("Error al guardar objeto cultural", e);
+        }
+    }
     
     /**
      * Subir objeto cultural completo con imágenes y contexto
@@ -47,9 +76,7 @@ public class CulturalService {
         culturalObject.setUpdatedAt(LocalDateTime.now());
         
         // TODO: Obtener usuario real desde base de datos
-        User contributor = new User();
-        contributor.setId(request.getUserId());
-        culturalObject.setContributor(contributor);
+        culturalObject.setContributorId(request.getUserId().toString());
         
         // Procesar imágenes con KIRI Engine
         ImageUploadRequest kiriRequest = new ImageUploadRequest();
@@ -95,7 +122,7 @@ public class CulturalService {
     /**
      * Obtener objeto cultural por ID
      */
-    public CulturalObject getCulturalObjectById(Long id) {
+    public CulturalObject getCulturalObjectById(String id) {
         // TODO: Implementar consulta a base de datos
         log.info("Consultando objeto cultural con ID: {}", id);
         
@@ -106,7 +133,7 @@ public class CulturalService {
     /**
      * Agregar comentario
      */
-    public Comment addComment(Long objectId, String content, Long userId, Long parentCommentId) {
+    public Comment addComment(String objectId, String content, String userId, String parentCommentId) {
         log.info("Agregando comentario al objeto cultural {} por usuario {}", objectId, userId);
         
         Comment comment = new Comment();
@@ -116,13 +143,8 @@ public class CulturalService {
         comment.setParentCommentId(parentCommentId);
         
         // TODO: Obtener usuario y objeto cultural reales
-        User author = new User();
-        author.setId(userId);
-        comment.setAuthor(author);
-        
-        CulturalObject culturalObject = new CulturalObject();
-        culturalObject.setId(objectId);
-        comment.setCulturalObject(culturalObject);
+        comment.setAuthorId(userId);
+        comment.setCulturalObjectId(objectId);
         
         // TODO: Guardar en base de datos
         // commentRepository.save(comment);
@@ -133,7 +155,7 @@ public class CulturalService {
     /**
      * Agregar reacción
      */
-    public Reaction addReaction(Long objectId, String type, Long userId) {
+    public Reaction addReaction(String objectId, String type, String userId) {
         log.info("Agregando reacción {} al objeto cultural {} por usuario {}", type, objectId, userId);
         
         Reaction reaction = new Reaction();
@@ -141,13 +163,8 @@ public class CulturalService {
         reaction.setCreatedAt(LocalDateTime.now());
         
         // TODO: Obtener usuario y objeto cultural reales
-        User user = new User();
-        user.setId(userId);
-        reaction.setUser(user);
-        
-        CulturalObject culturalObject = new CulturalObject();
-        culturalObject.setId(objectId);
-        reaction.setCulturalObject(culturalObject);
+        reaction.setUserId(userId);
+        reaction.setCulturalObjectId(objectId);
         
         // TODO: Guardar en base de datos
         // reactionRepository.save(reaction);
@@ -158,7 +175,7 @@ public class CulturalService {
     /**
      * Obtener objetos pendientes de moderación
      */
-    public List<CulturalObject> getPendingObjects(Long moderatorId) {
+    public List<CulturalObject> getPendingObjects(String moderatorId) {
         // TODO: Verificar que el usuario sea moderador
         log.info("Consultando objetos pendientes de moderación para moderador: {}", moderatorId);
         
@@ -169,7 +186,7 @@ public class CulturalService {
     /**
      * Revisar objeto cultural (aprobar/rechazar)
      */
-    public CulturalObject reviewObject(Long objectId, Long moderatorId, String status, String feedback) {
+    public CulturalObject reviewObject(String objectId, String moderatorId, String status, String feedback) {
         log.info("Revisando objeto cultural {} por moderador {} con estado: {}", 
                 objectId, moderatorId, status);
         
@@ -181,9 +198,7 @@ public class CulturalService {
         culturalObject.setUpdatedAt(LocalDateTime.now());
         
         // TODO: Obtener moderador real
-        User moderator = new User();
-        moderator.setId(moderatorId);
-        culturalObject.setModerator(moderator);
+        culturalObject.setModeratorId(moderatorId);
         
         // TODO: Guardar en base de datos
         // culturalObjectRepository.save(culturalObject);

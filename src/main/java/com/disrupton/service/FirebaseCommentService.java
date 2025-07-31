@@ -3,6 +3,7 @@ package com.disrupton.service;
 import com.disrupton.dto.CommentDto;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,10 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FirebaseCommentService {
 
-    private final Firestore db = FirestoreClient.getFirestore();
+    private final Firestore db;
     private static final String COLLECTION_NAME = "comments";
 
     /**
@@ -31,6 +33,9 @@ public class FirebaseCommentService {
         // Crear documento con ID automático
         DocumentReference docRef = db.collection(COLLECTION_NAME).document();
         String commentId = docRef.getId();
+        
+        // Asignar el ID generado al comentario
+        comment.setId(commentId);
         
         ApiFuture<WriteResult> future = docRef.set(comment);
         
@@ -56,6 +61,8 @@ public class FirebaseCommentService {
         List<CommentDto> comments = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             CommentDto comment = document.toObject(CommentDto.class);
+            // Asignar el ID del documento
+            comment.setId(document.getId());
             comments.add(comment);
         }
         
@@ -79,6 +86,8 @@ public class FirebaseCommentService {
         List<CommentDto> comments = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             CommentDto comment = document.toObject(CommentDto.class);
+            // Asignar el ID del documento
+            comment.setId(document.getId());
             comments.add(comment);
         }
         
