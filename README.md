@@ -11,6 +11,7 @@ Integración completa con la API de KIRI Engine para generar modelos 3D a partir
 - ✅ **Validaciones Completas**: Verifica formatos, tamaños y parámetros
 - ✅ **Manejo de Errores**: Respuestas de error detalladas y logging completo
 - ✅ **CORS Habilitado**: Compatible con aplicaciones web frontend
+- ✅ **Integración Firebase**: Base de datos NoSQL y almacenamiento en la nube
 
 ## 📋 Requisitos
 
@@ -18,6 +19,7 @@ Integración completa con la API de KIRI Engine para generar modelos 3D a partir
 - Spring Boot 2.7+
 - Maven
 - API Key de KIRI Engine
+- Proyecto Firebase (para funcionalidades de base de datos)
 
 ## 🛠️ Instalación
 
@@ -27,17 +29,63 @@ git clone <repository-url>
 cd disrupton_proyecto
 ```
 
-2. **Configurar la API Key**
-Editar `src/main/resources/application.properties`:
-```properties
-kiri.engine.api-key=tu_api_key_aqui
-kiri.engine.base-url=https://api.kiriengine.app/api/v1
+2. **Configurar la API Key de KIRI Engine**
+Editar `src/main/resources/application.yml`:
+```yaml
+kiri:
+  engine:
+    api-key: tu_api_key_aqui
+    base-url: https://api.kiriengine.app/api/v1
 ```
 
-3. **Compilar y ejecutar**
+3. **Configurar Firebase (Opcional)**
+   
+   **a) Crear proyecto Firebase:**
+   - Ve a [Firebase Console](https://console.firebase.google.com/)
+   - Crea un nuevo proyecto
+   - Habilita Firestore Database
+   - Habilita Firebase Storage
+   
+   **b) Descargar credenciales:**
+   - Ve a Configuración del Proyecto > Cuentas de servicio
+   - Genera una nueva clave privada
+   - Descarga el archivo JSON
+   - Renómbralo como `firebase-service-account.json`
+   - Colócalo en `src/main/resources/`
+   
+   **c) Configurar application.yml:**
+   ```yaml
+   firebase:
+     project:
+       id: tu-proyecto-id
+       storage:
+         bucket: tu-proyecto-id.appspot.com
+     service:
+       account:
+         file: firebase-service-account.json
+   ```
+
+4. **Compilar y ejecutar**
 ```bash
 mvn clean install
 mvn spring-boot:run
+```
+
+## 🔐 Configuración de Seguridad
+
+### **Archivos de Credenciales**
+El archivo `firebase-service-account.json` está incluido en `.gitignore` para evitar que se suba al repositorio. 
+
+**Para nuevos desarrolladores:**
+1. Copia `src/main/resources/firebase-service-account.example.json`
+2. Renómbralo como `firebase-service-account.json`
+3. Reemplaza los valores con tus credenciales reales
+
+### **Variables de Entorno (Recomendado)**
+```bash
+export FIREBASE_PROJECT_ID="tu-proyecto-id"
+export FIREBASE_STORAGE_BUCKET="tu-proyecto-id.appspot.com"
+export FIREBASE_SERVICE_ACCOUNT_FILE="firebase-service-account.json"
 ```
 
 ## 📚 API Endpoints
