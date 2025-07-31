@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ARPhotoDto {
+    private String id; // ID del documento en Firestore
     private String userId; // reference a users
     private String objectId; // reference a cultural_objects
     private String photoUrl; // link Firebase Storage

@@ -2,6 +2,7 @@ package com.disrupton.service;
 
 import com.google.cloud.storage.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,67 +13,26 @@ import java.util.UUID;
 @Slf4j
 public class FirebaseStorageService {
 
+    @Value("${firebase.project.storage.bucket:disrupton2025.appspot.com}")
+    private String bucketName;
+
     private final Storage storage = StorageOptions.getDefaultInstance().getService();
-    private static final String BUCKET_NAME = "disrupton2025.appspot.com"; // Cambiar por tu bucket
 
     /**
-     * Sube un archivo a Firebase Storage
+     * Sube un archivo 3D (modelo) a Firebase Storage
      */
-    public String uploadFile(MultipartFile file, String folder) throws IOException {
-        log.info("📤 Subiendo archivo: {} a la carpeta: {}", file.getOriginalFilename(), folder);
+    public String uploadModel3D(MultipartFile file, String userId, String modelId) throws IOException {
+        log.info("📁 Subiendo modelo 3D: {} para usuario: {}", file.getOriginalFilename(), userId);
         
-        // Generar nombre único para el archivo
-        String fileName = generateUniqueFileName(file.getOriginalFilename());
-        String filePath = folder + "/" + fileName;
+        String fileName = generateFileName(file.getOriginalFilename(), "models");
+        String filePath = String.format("models/%s/%s/%s", userId, modelId, fileName);
         
-        // Crear blob info
-        BlobId blobId = BlobId.of(BUCKET_NAME, filePath);
+        BlobId blobId = BlobId.of(bucketName, filePath);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType(file.getContentType())
                 .build();
         
-        // Subir archivo
         Blob blob = storage.create(blobInfo, file.getBytes());
-        
-        String downloadUrl = blob.getMediaLink();
-        log.info("✅ Archivo subido exitosamente: {}", downloadUrl);
-        
-        return downloadUrl;
-    }
-
-    /**
-     * Sube múltiples archivos a Firebase Storage
-     */
-    public String[] uploadMultipleFiles(MultipartFile[] files, String folder) throws IOException {
-        log.info("📤 Subiendo {} archivos a la carpeta: {}", files.length, folder);
-        
-        String[] urls = new String[files.length];
-        
-        for (int i = 0; i < files.length; i++) {
-            urls[i] = uploadFile(files[i], folder);
-        }
-        
-        log.info("✅ {} archivos subidos exitosamente", files.length);
-        return urls;
-    }
-
-    /**
-     * Sube un modelo 3D a Firebase Storage
-     */
-    public String uploadModel3D(byte[] modelData, String objectId, String format) throws IOException {
-        log.info("🏗️ Subiendo modelo 3D para objeto: {}", objectId);
-        
-        String fileName = "model." + format.toLowerCase();
-        String filePath = "cultural-objects/" + objectId + "/" + fileName;
-        
-        // Crear blob info
-        BlobId blobId = BlobId.of(BUCKET_NAME, filePath);
-        BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-                .setContentType(getContentTypeForFormat(format))
-                .build();
-        
-        // Subir archivo
-        Blob blob = storage.create(blobInfo, modelData);
         
         String downloadUrl = blob.getMediaLink();
         log.info("✅ Modelo 3D subido exitosamente: {}", downloadUrl);
@@ -81,67 +41,67 @@ public class FirebaseStorageService {
     }
 
     /**
-     * Sube una imagen miniatura a Firebase Storage
+     * Sube una imagen miniatura (thumbnail) a Firebase Storage
      */
-    public String uploadThumbnail(byte[] imageData, String objectId) throws IOException {
-        log.info("🖼️ Subiendo miniatura para objeto: {}", objectId);
+    public String uploadThumbnail(MultipartFile file, String userId, String modelId) throws IOException {
+        log.info("🖼️ Subiendo thumbnail: {} para usuario: {}", file.getOriginalFilename(), userId);
         
-        String fileName = "thumbnail.jpg";
-        String filePath = "cultural-objects/" + objectId + "/" + fileName;
+        String fileName = generateFileName(file.getOriginalFilename(), "thumbnails");
+        String filePath = String.format("thumbnails/%s/%s/%s", userId, modelId, fileName);
         
-        // Crear blob info
-        BlobId blobId = BlobId.of(BUCKET_NAME, filePath);
+        BlobId blobId = BlobId.of(bucketName, filePath);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-                .setContentType("image/jpeg")
+                .setContentType(file.getContentType())
                 .build();
         
-        // Subir archivo
-        Blob blob = storage.create(blobInfo, imageData);
+        Blob blob = storage.create(blobInfo, file.getBytes());
         
         String downloadUrl = blob.getMediaLink();
-        log.info("✅ Miniatura subida exitosamente: {}", downloadUrl);
+        log.info("✅ Thumbnail subido exitosamente: {}", downloadUrl);
         
         return downloadUrl;
     }
 
     /**
-     * Sube una foto de Realidad Aumentada
+     * Sube múltiples imágenes para procesamiento con KIRI Engine
      */
-    public String uploadARPhoto(MultipartFile photo, String photoId) throws IOException {
-        log.info("📸 Subiendo foto de RA: {}", photoId);
+    public String uploadImagesForProcessing(MultipartFile[] files, String userId, String modelId) throws IOException {
+        log.info("📸 Subiendo {} imágenes para procesamiento", files.length);
         
-        String fileName = "photo.jpg";
-        String filePath = "ar-photos/" + photoId + "/" + fileName;
+        String[] urls = new String[files.length];
         
-        // Crear blob info
-        BlobId blobId = BlobId.of(BUCKET_NAME, filePath);
-        BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-                .setContentType(photo.getContentType())
-                .build();
+        for (int i = 0; i < files.length; i++) {
+            MultipartFile file = files[i];
+            String fileName = generateFileName(file.getOriginalFilename(), "processing");
+            String filePath = String.format("processing/%s/%s/%s", userId, modelId, fileName);
+            
+            BlobId blobId = BlobId.of(bucketName, filePath);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(file.getContentType())
+                    .build();
+            
+            Blob blob = storage.create(blobInfo, file.getBytes());
+            urls[i] = blob.getMediaLink();
+        }
         
-        // Subir archivo
-        Blob blob = storage.create(blobInfo, photo.getBytes());
-        
-        String downloadUrl = blob.getMediaLink();
-        log.info("✅ Foto de RA subida exitosamente: {}", downloadUrl);
-        
-        return downloadUrl;
+        log.info("✅ {} imágenes subidas para procesamiento", files.length);
+        return String.join(",", urls);
     }
 
     /**
      * Elimina un archivo de Firebase Storage
      */
     public boolean deleteFile(String filePath) {
-        log.info("🗑️ Eliminando archivo: {}", filePath);
-        
         try {
-            BlobId blobId = BlobId.of(BUCKET_NAME, filePath);
+            log.info("🗑️ Eliminando archivo: {}", filePath);
+            
+            BlobId blobId = BlobId.of(bucketName, filePath);
             boolean deleted = storage.delete(blobId);
             
             if (deleted) {
                 log.info("✅ Archivo eliminado exitosamente: {}", filePath);
             } else {
-                log.warn("⚠️ Archivo no encontrado: {}", filePath);
+                log.warn("⚠️ Archivo no encontrado para eliminar: {}", filePath);
             }
             
             return deleted;
@@ -152,80 +112,49 @@ public class FirebaseStorageService {
     }
 
     /**
-     * Elimina todos los archivos de un objeto cultural
+     * Obtiene la URL pública de un archivo
      */
-    public boolean deleteObjectFiles(String objectId) {
-        log.info("🗑️ Eliminando archivos del objeto cultural: {}", objectId);
-        
+    public String getPublicUrl(String filePath) {
         try {
-            String prefix = "cultural-objects/" + objectId + "/";
+            BlobId blobId = BlobId.of(bucketName, filePath);
+            Blob blob = storage.get(blobId);
             
-            // Listar todos los archivos con el prefijo
-            Page<Blob> blobs = storage.list(BUCKET_NAME, Storage.BlobListOption.prefix(prefix));
-            
-            boolean allDeleted = true;
-            for (Blob blob : blobs.iterateAll()) {
-                boolean deleted = storage.delete(blob.getBlobId());
-                if (!deleted) {
-                    allDeleted = false;
-                    log.warn("⚠️ No se pudo eliminar: {}", blob.getName());
-                }
-            }
-            
-            if (allDeleted) {
-                log.info("✅ Todos los archivos del objeto eliminados exitosamente");
+            if (blob != null) {
+                return blob.getMediaLink();
             } else {
-                log.warn("⚠️ Algunos archivos no pudieron ser eliminados");
+                log.warn("⚠️ Archivo no encontrado: {}", filePath);
+                return null;
             }
-            
-            return allDeleted;
         } catch (Exception e) {
-            log.error("❌ Error al eliminar archivos del objeto: {}", e.getMessage(), e);
-            return false;
+            log.error("❌ Error al obtener URL pública: {}", e.getMessage(), e);
+            return null;
         }
     }
 
     /**
-     * Obtiene la URL pública de un archivo
+     * Genera un nombre de archivo único
      */
-    public String getPublicUrl(String filePath) {
-        return "https://storage.googleapis.com/" + BUCKET_NAME + "/" + filePath;
-    }
-
-    /**
-     * Genera un nombre único para el archivo
-     */
-    private String generateUniqueFileName(String originalFileName) {
+    private String generateFileName(String originalFileName, String prefix) {
         String extension = "";
         if (originalFileName != null && originalFileName.contains(".")) {
             extension = originalFileName.substring(originalFileName.lastIndexOf("."));
         }
-        return UUID.randomUUID().toString() + extension;
+        
+        String uniqueId = UUID.randomUUID().toString();
+        return prefix + "_" + uniqueId + extension;
     }
 
     /**
-     * Obtiene el content type para diferentes formatos de archivo
+     * Verifica si un archivo existe
      */
-    private String getContentTypeForFormat(String format) {
-        switch (format.toUpperCase()) {
-            case "OBJ":
-                return "text/plain";
-            case "FBX":
-                return "application/octet-stream";
-            case "STL":
-                return "application/sla";
-            case "PLY":
-                return "text/plain";
-            case "GLB":
-                return "model/gltf-binary";
-            case "GLTF":
-                return "model/gltf+json";
-            case "USDZ":
-                return "model/vnd.usdz+zip";
-            case "XYZ":
-                return "text/plain";
-            default:
-                return "application/octet-stream";
+    public boolean fileExists(String filePath) {
+        try {
+            BlobId blobId = BlobId.of(bucketName, filePath);
+            Blob blob = storage.get(blobId);
+            return blob != null;
+        } catch (Exception e) {
+            log.error("❌ Error al verificar archivo: {}", e.getMessage(), e);
+            return false;
         }
     }
 } 

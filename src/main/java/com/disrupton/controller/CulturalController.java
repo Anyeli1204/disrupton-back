@@ -1,6 +1,7 @@
 package com.disrupton.controller;
 
 import com.disrupton.model.*;
+import com.disrupton.dto.CulturalObjectRequest;
 import com.disrupton.service.CulturalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -18,6 +20,42 @@ import java.util.List;
 public class CulturalController {
     
     private final CulturalService culturalService;
+    
+    /**
+     * Crear objeto cultural sin archivos (solo datos)
+     */
+    @PostMapping("/objects")
+    public ResponseEntity<?> createCulturalObject(@RequestBody CulturalObjectRequest request) {
+        try {
+            log.info("🏺 Creando objeto cultural: {}", request.getName());
+            
+            // Crear objeto cultural
+            CulturalObject culturalObject = new CulturalObject();
+            culturalObject.setName(request.getName());
+            culturalObject.setDescription(request.getDescription());
+            culturalObject.setOrigin(request.getOrigin());
+            culturalObject.setCulturalType(request.getCulturalType());
+            culturalObject.setLocalPhrases(request.getLocalPhrases());
+            culturalObject.setStory(request.getStory());
+            culturalObject.setContributorId(request.getContributorId());
+            culturalObject.setNumberOfImages(request.getNumberOfImages());
+            culturalObject.setCaptureNotes(request.getCaptureNotes());
+            culturalObject.setRegion(request.getRegion());
+            culturalObject.setStatus("DRAFT");
+            culturalObject.setCreatedAt(java.time.LocalDateTime.now());
+            culturalObject.setUpdatedAt(java.time.LocalDateTime.now());
+            
+            // Guardar en Firebase
+            CulturalObject savedObject = culturalService.saveCulturalObject(culturalObject);
+            
+            return ResponseEntity.ok(savedObject);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al crear objeto cultural: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(
+                    new ErrorResponse("Error interno del servidor", e.getMessage()));
+        }
+    }
     
     /**
      * Subir objeto cultural con imágenes y contexto
@@ -34,7 +72,7 @@ public class CulturalController {
             @RequestParam(value = "story", required = false) String story,
             @RequestParam(value = "captureNotes", required = false) String captureNotes,
             @RequestParam(value = "fileFormat", defaultValue = "GLB") String fileFormat,
-            @RequestParam("userId") Long userId) {
+            @RequestParam("userId") String userId) {
         
         try {
             log.info("Recibida solicitud para subir objeto cultural: {}", name);
@@ -87,7 +125,7 @@ public class CulturalController {
      * Obtener objeto cultural por ID
      */
     @GetMapping("/objects/{id}")
-    public ResponseEntity<CulturalObject> getCulturalObject(@PathVariable Long id) {
+    public ResponseEntity<CulturalObject> getCulturalObject(@PathVariable String id) {
         CulturalObject object = culturalService.getCulturalObjectById(id);
         return ResponseEntity.ok(object);
     }
@@ -97,10 +135,10 @@ public class CulturalController {
      */
     @PostMapping("/objects/{id}/comments")
     public ResponseEntity<Comment> addComment(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("content") String content,
-            @RequestParam("userId") Long userId,
-            @RequestParam(value = "parentCommentId", required = false) Long parentCommentId) {
+            @RequestParam("userId") String userId,
+            @RequestParam(value = "parentCommentId", required = false) String parentCommentId) {
         
         Comment comment = culturalService.addComment(id, content, userId, parentCommentId);
         return ResponseEntity.ok(comment);
@@ -111,9 +149,9 @@ public class CulturalController {
      */
     @PostMapping("/objects/{id}/reactions")
     public ResponseEntity<Reaction> addReaction(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("type") String type,
-            @RequestParam("userId") Long userId) {
+            @RequestParam("userId") String userId) {
         
         Reaction reaction = culturalService.addReaction(id, type, userId);
         return ResponseEntity.ok(reaction);
@@ -124,7 +162,7 @@ public class CulturalController {
      */
     @GetMapping("/moderation/pending")
     public ResponseEntity<List<CulturalObject>> getPendingObjects(
-            @RequestParam("moderatorId") Long moderatorId) {
+            @RequestParam("moderatorId") String moderatorId) {
         
         List<CulturalObject> objects = culturalService.getPendingObjects(moderatorId);
         return ResponseEntity.ok(objects);
@@ -135,8 +173,8 @@ public class CulturalController {
      */
     @PostMapping("/moderation/{id}/review")
     public ResponseEntity<CulturalObject> reviewObject(
-            @PathVariable Long id,
-            @RequestParam("moderatorId") Long moderatorId,
+            @PathVariable String id,
+            @RequestParam("moderatorId") String moderatorId,
             @RequestParam("status") String status,
             @RequestParam(value = "feedback", required = false) String feedback) {
         

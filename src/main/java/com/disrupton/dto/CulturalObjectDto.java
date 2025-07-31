@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CulturalObjectDto {
+    private String id; // ID del documento en Firestore
     private String title;
     private String description;
     private String modelUrl; // URL en Firebase Storage del modelo 3D

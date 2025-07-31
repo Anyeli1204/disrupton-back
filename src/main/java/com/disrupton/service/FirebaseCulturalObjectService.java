@@ -3,6 +3,7 @@ package com.disrupton.service;
 import com.disrupton.dto.CulturalObjectDto;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,10 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FirebaseCulturalObjectService {
 
-    private final Firestore db = FirestoreClient.getFirestore();
+    private final Firestore db;
     private static final String COLLECTION_NAME = "cultural_objects";
 
     /**
@@ -37,6 +39,9 @@ public class FirebaseCulturalObjectService {
         DocumentReference docRef = db.collection(COLLECTION_NAME).document();
         String objectId = docRef.getId();
         
+        // Asignar el ID generado al objeto
+        culturalObject.setId(objectId);
+        
         ApiFuture<WriteResult> future = docRef.set(culturalObject);
         
         WriteResult result = future.get();
@@ -57,6 +62,8 @@ public class FirebaseCulturalObjectService {
         
         if (document.exists()) {
             CulturalObjectDto culturalObject = document.toObject(CulturalObjectDto.class);
+            // Asignar el ID del documento
+            culturalObject.setId(document.getId());
             log.info("✅ Objeto cultural encontrado: {}", culturalObject.getTitle());
             return culturalObject;
         } else {
@@ -81,6 +88,8 @@ public class FirebaseCulturalObjectService {
         List<CulturalObjectDto> culturalObjects = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             CulturalObjectDto culturalObject = document.toObject(CulturalObjectDto.class);
+            // Asignar el ID del documento
+            culturalObject.setId(document.getId());
             culturalObjects.add(culturalObject);
         }
         
@@ -104,6 +113,8 @@ public class FirebaseCulturalObjectService {
         List<CulturalObjectDto> culturalObjects = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             CulturalObjectDto culturalObject = document.toObject(CulturalObjectDto.class);
+            // Asignar el ID del documento
+            culturalObject.setId(document.getId());
             culturalObjects.add(culturalObject);
         }
         
@@ -115,7 +126,7 @@ public class FirebaseCulturalObjectService {
      * Obtiene objetos culturales por creador
      */
     public List<CulturalObjectDto> getCulturalObjectsByCreator(String createdBy) throws ExecutionException, InterruptedException {
-        log.info("👤 Buscando objetos culturales del creador: {}", createdBy);
+        log.info("👤 Obteniendo objetos culturales del creador: {}", createdBy);
         
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
                 .whereEqualTo("createdBy", createdBy)
@@ -127,6 +138,8 @@ public class FirebaseCulturalObjectService {
         List<CulturalObjectDto> culturalObjects = new ArrayList<>();
         for (DocumentSnapshot document : querySnapshot.getDocuments()) {
             CulturalObjectDto culturalObject = document.toObject(CulturalObjectDto.class);
+            // Asignar el ID del documento
+            culturalObject.setId(document.getId());
             culturalObjects.add(culturalObject);
         }
         

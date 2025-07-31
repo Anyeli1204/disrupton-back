@@ -22,7 +22,7 @@ public class CulturalUploadRequest {
     private String fileFormat = "OBJ";
     
     // Información del usuario
-    private Long userId;
+    private String userId;
     
     public enum CulturalType {
         ARTESANIA, GASTRONOMIA, MUSICA, DANZA, TEXTIL, CERAMICA, 
