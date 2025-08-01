@@ -6,6 +6,7 @@ server:
 spring:
   application:
     name: kiri-engine-integration
+
   
   # Configuración para archivos multipart
   servlet:
@@ -29,3 +30,10 @@ logging:
     org.springframework.web: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+#Gemini API for moderation comments
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+    base-url: https://generativelanguage.googleapis.com/v1beta
+    model: gemini-2.5-flash

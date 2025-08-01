@@ -1,6 +1,7 @@
 package com.disrupton.service;
 
 import com.disrupton.model.*;
+import com.google.cloud.Timestamp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -109,7 +110,7 @@ public class CulturalService {
 
         Comment comment = new Comment();
         comment.setContent(content);
-        comment.setCreatedAt(LocalDateTime.now());
+        comment.setCreatedAt(Timestamp.now());
         comment.setModerated(false);
         comment.setParentCommentId(parentCommentId);
 

@@ -1,7 +1,9 @@
 package com.disrupton.controller;
 
 import com.disrupton.model.*;
+import com.disrupton.moderation.ModerationService;
 import com.disrupton.service.CulturalService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cultural")
@@ -16,7 +19,7 @@ import java.util.List;
 @Slf4j
 @CrossOrigin(origins = "*")
 public class CulturalController {
-
+    private final ModerationService moderationService;
     private final CulturalService culturalService;
 
     /**
@@ -95,16 +98,36 @@ public class CulturalController {
     /**
      * Agregar comentario a un objeto cultural
      */
-
     @PostMapping("/objects/{id}/comments")
-    public ResponseEntity<Comment> addComment(
+    public ResponseEntity<?> addComment(
             @PathVariable String id,
             @RequestParam("content") String content,
             @RequestParam("userId") String userId,
             @RequestParam(value = "parentCommentId", required = false) String parentCommentId) {
 
-        Comment comment = culturalService.addComment(id, content, userId, parentCommentId);
-        return ResponseEntity.ok(comment);
+        try {
+            // 1. Verificar si el comentario es apropiado mediante moderación AI
+            boolean isSafe = moderationService.isCommentSafe(content);
+            if (!isSafe) {
+                String reason = moderationService.getReasonIfUnsafe(content);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Comentario rechazado",
+                        "reason", reason,
+                        "message", "Tu comentario no cumple con nuestras políticas de comunidad."
+                ));
+            }
+
+            // 2. Guardar el comentario si es apropiado
+            Comment comment = culturalService.addComment(id, content, userId, parentCommentId);
+            return ResponseEntity.ok(comment);
+
+        } catch (Exception e) {
+            // 3. Manejo de errores (por ejemplo, problemas con la moderación o guardado)
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "Error interno del servidor",
+                    "details", e.getMessage()
+            ));
+        }
     }
 
     /**

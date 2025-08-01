@@ -1,21 +1,28 @@
 package com.disrupton.model;
 
+import com.google.cloud.firestore.annotation.PropertyName;
 import lombok.Data;
-import java.time.LocalDateTime;
-import java.util.List;
+import com.google.cloud.Timestamp;
+
 
 @Data
 public class Comment {
 
-    private String id; // Firestore document ID (se puede asignar desde backend o dejar que Firebase lo genere)
+    private String id;
+
     private String content;
-    private LocalDateTime createdAt;
+
+    private Timestamp createdAt;
+
     private boolean isModerated;
 
-    // Referencias por ID
-    private String culturalObjectId;  // ID del objeto cultural relacionado
-    private String authorUserId;      // ID del usuario que escribió el comentario
+    private String culturalObjectId;
 
-    // Para comentarios anidados
-    private String parentCommentId;   // ID del comentario padre, si es una respuesta
+    private String authorUserId;
+
+    private String parentCommentId; //Id del comentario padre si es una subrespuesta
+
+    private String preguntaId;
+
+    private String responseTimeMs;
 }
