@@ -4,6 +4,8 @@ import com.disrupton.model.Comment;
 import com.disrupton.moderation.ModerationService;
 import com.disrupton.service.CommentService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -94,4 +96,27 @@ public class CommentMuralController {
 
         return ResponseEntity.ok(response);
     }
+    @DeleteMapping("/mural/{preguntaId}")
+    public ResponseEntity<String> eliminarComentarioMural(
+            @PathVariable String preguntaId,
+            @RequestBody Map<String, String> request) {
+        String comentarioId = request.get("id");
+
+        if (comentarioId == null || comentarioId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("El ID del comentario es obligatorio.");
+        }
+
+        try {
+            boolean eliminado = comentarioService.deleteComment(comentarioId);
+            if (eliminado) {
+                return ResponseEntity.ok("Comentario eliminado exitosamente.");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró el comentario con ese ID.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al eliminar comentario: " + e.getMessage());
+        }
+    }
+
 }

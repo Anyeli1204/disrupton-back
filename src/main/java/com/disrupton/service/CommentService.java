@@ -16,14 +16,14 @@ import java.util.stream.Collectors;
 public class CommentService {
     private static final String COMENTARIOS_O = "comentarios_objetos";
     private static final String COMENTARIOS_M = "comentarios_mural";
+    private final Firestore db = FirestoreClient.getFirestore();
+
 
     public List<Comment> obtenerComentariosObject(String objetoId, int page, int size) throws ExecutionException, InterruptedException {
-        Firestore db = FirestoreClient.getFirestore();
-
         CollectionReference comentariosRef = db.collection(COMENTARIOS_O);
         Query query = comentariosRef
                 .whereEqualTo("objetoCulturalId", objetoId)
-                .orderBy("fechaComentario", Query.Direction.DESCENDING)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .offset(page * size)
                 .limit(size);
 
@@ -37,8 +37,6 @@ public class CommentService {
     }
 
     public List<Comment> obtenerComentariosMural(String preguntaId, int page, int size) throws ExecutionException, InterruptedException {
-        Firestore db = FirestoreClient.getFirestore();
-
         CollectionReference comentariosRef = db.collection(COMENTARIOS_M);
         Query query = comentariosRef
                 .whereEqualTo("preguntaId", preguntaId)
@@ -54,8 +52,6 @@ public class CommentService {
     }
 
     public void saveCommentObject(String content, String id_Object, boolean isModerated, long responseTimeMs) {
-        Firestore db = FirestoreClient.getFirestore();
-
         Map<String, Object> data = new HashMap<>();
         data.put("content", content);
         data.put("isModerated", isModerated);
@@ -100,6 +96,22 @@ public class CommentService {
                 System.err.println("Error al guardar comentario mural: " + t.getMessage());
             }
         }, Runnable::run); // Ejecuta el callback en el mismo hilo (o puedes usar un executor)
+    }
+
+    public boolean deleteComment(String comentarioId) throws ExecutionException, InterruptedException {
+        System.out.println("🗑️ Intentando eliminar comentario con ID: " + comentarioId);
+
+        DocumentReference docRef = db.collection(COMENTARIOS_M).document(comentarioId);
+        DocumentSnapshot snapshot = docRef.get().get();
+
+        if (!snapshot.exists()) {
+            System.out.println("⚠️ Comentario no encontrado.");
+            return false;
+        }
+
+        WriteResult result = docRef.delete().get();
+        System.out.println("✅ Comentario eliminado. Timestamp: " + result.getUpdateTime());
+        return true;
     }
 
 }
