@@ -91,36 +91,7 @@ public class CollaboratorController {
     /**
      * GET /api/collaborators/{id}/access - Verificar acceso a redes de contacto
      */
-    @GetMapping("/{id}/access")
-    public ResponseEntity<Map<String, Object>> checkAccess(
-            @PathVariable String id,
-            @AuthenticationPrincipal UserDetails userDetails) {
 
-        String userId = userDetails != null ? userDetails.getUsername() : null;
-        log.info("Verificando acceso del usuario {} al agente {}", userId, id);
-
-        boolean hasAccess = collaboratorService.hasAccess(id, userId);
-
-        Map<String, Object> response = Map.of(
-                "agentId", id,
-                "userId", userId != null ? userId : "anónimo",
-                "hasAccess", hasAccess,
-                "timestamp", System.currentTimeMillis()
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * GET /api/collaborators/{id}/stats - Estadísticas del agente cultural
-     */
-    @GetMapping("/{id}/stats")
-    public ResponseEntity<Map<String, Object>> getCollaboratorStats(@PathVariable String id) {
-        log.info("Obteniendo estadísticas del agente cultural {}", id);
-
-        Map<String, Object> stats = collaboratorService.getCollaboratorStats(id);
-        return ResponseEntity.ok(stats);
-    }
 
     /**
      * Exception handler para manejar errores específicos
