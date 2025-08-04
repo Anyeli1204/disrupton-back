@@ -22,6 +22,15 @@ kiri:
       key: ${KIRI_ENGINE_API_KEY:kiri_nEafHXmu9nBj6PTf_Zt8mFfWiTXb0EUU833AbR2Gz00}
       base-url: ${KIRI_ENGINE_BASE_URL:https://api.kiriengine.app/api/v1}
 
+# Configuración de Gemini API para Avatares
+gemini:
+  apiKey: ${GEMINI_API_KEY:YOUR_GEMINI_API_KEY}
+  apiUrl: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta}
+  model: ${GEMINI_MODEL:gemini-pro}
+  temperature: ${GEMINI_TEMPERATURE:0.7}
+  maxOutputTokens: ${GEMINI_MAX_TOKENS:1024}
+  timeoutMs: ${GEMINI_TIMEOUT:30000}
+
 # Configuración de logging
 logging:
   level:

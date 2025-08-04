@@ -1,8 +1,7 @@
 package com.disrupton.controller;
 
 import com.disrupton.dto.AvatarDto;
-import com.disrupton.service.AvatarCulturalService;
-import com.disrupton.service.FirebaseAvatarService;
+import com.disrupton.service.AvatarService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -10,16 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Controlador REST para la gestión de Avatares Culturales
- * Proporciona endpoints para crear, consultar y gestionar avatares interactivos
+ * Controlador REST para la gestión de Avatares
+ * Proporciona endpoints para consultar los 3 tipos de avatares disponibles
  */
 @RestController
 @RequestMapping("/api/v1/avatars")
@@ -29,42 +26,31 @@ import java.util.concurrent.ExecutionException;
 @CrossOrigin(origins = "*")
 public class AvatarController {
     
-    private final AvatarCulturalService avatarCulturalService;
-    private final FirebaseAvatarService firebaseAvatarService;
-    
-    // ===== OPERACIONES CRUD DE AVATARES =====
+    private final AvatarService avatarService;
     
     /**
-     * Crea un nuevo avatar cultural
+     * Obtiene todos los avatares disponibles (Vicuña, Perro Peruano, Gallito de las Rocas)
      */
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createAvatar(@Valid @RequestBody AvatarDto avatarData) {
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getAllAvatars() {
         try {
-            log.info("🎭 POST /api/v1/avatars - Creando nuevo avatar: {}", avatarData.getName());
+            log.info("📋 GET /api/v1/avatars - Obteniendo todos los avatares disponibles");
             
-            AvatarDto createdAvatar = avatarCulturalService.createCulturalAvatar(avatarData);
+            List<AvatarDto> avatars = avatarService.getAllAvatars();
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Avatar cultural creado exitosamente",
-                "data", createdAvatar,
-                "avatarId", createdAvatar.getAvatarId()
-            ));
-            
-        } catch (IllegalArgumentException e) {
-            log.error("❌ Error de validación al crear avatar: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "error", "VALIDATION_ERROR",
-                "message", e.getMessage()
+                "message", "Avatares obtenidos exitosamente",
+                "data", avatars,
+                "count", avatars.size()
             ));
             
         } catch (ExecutionException | InterruptedException e) {
-            log.error("❌ Error al crear avatar: {}", e.getMessage());
+            log.error("❌ Error al obtener avatares: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "success", false,
-                "error", "CREATION_ERROR",
-                "message", "Error interno al crear el avatar"
+                "error", "RETRIEVAL_ERROR",
+                "message", "Error interno al obtener los avatares"
             ));
         }
     }
@@ -77,7 +63,7 @@ public class AvatarController {
         try {
             log.info("👤 GET /api/v1/avatars/{} - Obteniendo avatar", avatarId);
             
-            AvatarDto avatar = firebaseAvatarService.getAvatarById(avatarId);
+            AvatarDto avatar = avatarService.getAvatarById(avatarId);
             
             if (avatar == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
@@ -101,6 +87,7 @@ public class AvatarController {
             ));
         }
     }
+}
     
     /**
      * Actualiza un avatar existente

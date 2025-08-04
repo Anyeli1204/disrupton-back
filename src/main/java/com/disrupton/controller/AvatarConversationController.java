@@ -1,64 +1,49 @@
 package com.disrupton.controller;
 
-import com.disrupton.dto.AvatarConversationDto;
-import com.disrupton.dto.AvatarSessionDto;
-import com.disrupton.service.AvatarCulturalService;
-import com.disrupton.service.FirebaseAvatarConversationService;
+import com.disrupton.service.GeminiAvatarService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Controlador REST para la gestión de Conversaciones con Avatares Culturales
- * Maneja el flujo completo de conversaciones interactivas
+ * Controlador simplificado para conversaciones con avatares usando Gemini API
  */
 @RestController
 @RequestMapping("/api/v1/conversations")
 @RequiredArgsConstructor
 @Slf4j
-@Validated
 @CrossOrigin(origins = "*")
 public class AvatarConversationController {
     
-    private final AvatarCulturalService avatarCulturalService;
-    private final FirebaseAvatarConversationService conversationService;
-    
-    // ===== GESTIÓN DE SESIONES DE CONVERSACIÓN =====
+    private final GeminiAvatarService geminiAvatarService;
     
     /**
-     * Inicia una nueva conversación con un avatar
+     * Endpoint principal para enviar mensajes a los avatares
      */
-    @PostMapping("/start")
-    public ResponseEntity<Map<String, Object>> startConversation(
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> sendMessage(
             @RequestParam @NotBlank String avatarId,
             @RequestParam @NotBlank String userId,
-            @RequestParam(required = false) String deviceType,
-            @RequestParam(required = false) String campusZone) {
+            @RequestParam @NotBlank String message) {
         try {
-            log.info("🚀 POST /api/v1/conversations/start - Avatar: {}, Usuario: {}", avatarId, userId);
+            log.info("💬 POST /api/v1/conversations - Avatar: {}, Usuario: {}", avatarId, userId);
             
-            AvatarSessionDto session = avatarCulturalService.startConversation(
-                avatarId, userId, deviceType, campusZone);
+            Map<String, Object> response = geminiAvatarService.processUserMessage(avatarId, userId, message);
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Conversación iniciada exitosamente",
-                "data", session,
-                "sessionId", session.getSessionId()
+                "message", "Mensaje procesado exitosamente",
+                "data", response
             ));
             
         } catch (IllegalArgumentException e) {
-            log.error("❌ Error al iniciar conversación: {}", e.getMessage());
+            log.error("❌ Error de validación: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "error", "VALIDATION_ERROR",
@@ -66,38 +51,30 @@ public class AvatarConversationController {
             ));
             
         } catch (ExecutionException | InterruptedException e) {
-            log.error("❌ Error interno al iniciar conversación: {}", e.getMessage());
+            log.error("❌ Error interno: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "success", false,
-                "error", "SESSION_START_ERROR",
-                "message", "Error interno al iniciar conversación"
+                "error", "PROCESSING_ERROR",
+                "message", "Error interno al procesar el mensaje"
             ));
         }
     }
     
     /**
-     * Envía un mensaje del usuario al avatar
+     * Endpoint informativo
      */
-    @PostMapping("/message")
-    public ResponseEntity<Map<String, Object>> sendMessage(
-            @RequestParam @NotBlank String sessionId,
-            @RequestParam @NotBlank String message,
-            @RequestParam(defaultValue = "TEXT") String messageType) {
-        try {
-            log.info("💬 POST /api/v1/conversations/message - Sesión: {}, Tipo: {}", sessionId, messageType);
-            
-            AvatarConversationDto response = avatarCulturalService.processUserMessage(
-                sessionId, message, messageType);
-            
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Mensaje procesado exitosamente",
-                "data", response,
-                "conversationId", response.getConversationId()
-            ));
-            
-        } catch (IllegalArgumentException e) {
-            log.error("❌ Error al procesar mensaje: {}", e.getMessage());
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getInfo() {
+        return ResponseEntity.ok(Map.of(
+            "message", "Servicio de conversación con avatares usando Gemini API",
+            "endpoints", Map.of(
+                "POST /", "Enviar mensaje a un avatar",
+                "parameters", "avatarId, userId, message"
+            ),
+            "availableAvatars", new String[]{"VICUNA", "PERUVIAN_DOG", "COCK_OF_THE_ROCK"}
+        ));
+    }
+}
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "error", "VALIDATION_ERROR",

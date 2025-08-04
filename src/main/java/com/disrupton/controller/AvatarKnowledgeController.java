@@ -1,104 +1,34 @@
 package com.disrupton.controller;
 
-import com.disrupton.dto.AvatarKnowledgeDto;
-import com.disrupton.service.AvatarCulturalService;
-import com.disrupton.service.FirebaseAvatarKnowledgeService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 /**
- * Controlador REST para la gestión de Conocimiento Cultural de Avatares
- * Maneja la base de conocimientos y contenido educativo de los avatares
+ * Controlador simplificado para conocimiento de avatares
+ * Esta versión simplificada no implementa funcionalidad completa ya que se usará Gemini API
  */
 @RestController
 @RequestMapping("/api/v1/knowledge")
-@RequiredArgsConstructor
 @Slf4j
-@Validated
 @CrossOrigin(origins = "*")
 public class AvatarKnowledgeController {
     
-    private final AvatarCulturalService avatarCulturalService;
-    private final FirebaseAvatarKnowledgeService knowledgeService;
-    
-    // ===== OPERACIONES CRUD DE CONOCIMIENTO =====
-    
     /**
-     * Crea un nuevo elemento de conocimiento cultural
+     * Endpoint informativo que indica que esta funcionalidad está desactivada
      */
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createKnowledge(@Valid @RequestBody AvatarKnowledgeDto knowledgeData) {
-        try {
-            log.info("📚 POST /api/v1/knowledge - Creando conocimiento: {} para avatar: {}", 
-                    knowledgeData.getTitle(), knowledgeData.getAvatarId());
-            
-            AvatarKnowledgeDto createdKnowledge = knowledgeService.saveKnowledge(knowledgeData);
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "success", true,
-                "message", "Conocimiento creado exitosamente",
-                "data", createdKnowledge,
-                "knowledgeId", createdKnowledge.getKnowledgeId()
-            ));
-            
-        } catch (IllegalArgumentException e) {
-            log.error("❌ Error de validación al crear conocimiento: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "error", "VALIDATION_ERROR",
-                "message", e.getMessage()
-            ));
-            
-        } catch (ExecutionException | InterruptedException e) {
-            log.error("❌ Error al crear conocimiento: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "success", false,
-                "error", "CREATION_ERROR",
-                "message", "Error interno al crear el conocimiento"
-            ));
-        }
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getInfo() {
+        return ResponseEntity.ok(Map.of(
+            "message", "Funcionalidad de conocimiento de avatares implementada a través de Gemini API. Use la aplicación frontend para interactuar con los avatares predefinidos."
+        ));
     }
-    
-    /**
-     * Agrega conocimiento a un avatar específico
-     */
-    @PostMapping("/avatar/{avatarId}")
-    public ResponseEntity<Map<String, Object>> addKnowledgeToAvatar(
-            @PathVariable @NotBlank String avatarId,
-            @Valid @RequestBody AvatarKnowledgeDto knowledgeData) {
-        try {
-            log.info("🎭 POST /api/v1/knowledge/avatar/{} - Agregando conocimiento al avatar", avatarId);
-            
-            AvatarKnowledgeDto addedKnowledge = avatarCulturalService.addKnowledgeToAvatar(avatarId, knowledgeData);
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "success", true,
-                "message", "Conocimiento agregado al avatar exitosamente",
-                "data", addedKnowledge,
-                "avatarId", avatarId,
-                "knowledgeId", addedKnowledge.getKnowledgeId()
-            ));
-            
-        } catch (IllegalArgumentException e) {
-            log.error("❌ Error al agregar conocimiento al avatar {}: {}", avatarId, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "error", "VALIDATION_ERROR",
-                "message", e.getMessage()
-            ));
+}
             
         } catch (ExecutionException | InterruptedException e) {
             log.error("❌ Error interno al agregar conocimiento al avatar: {}", e.getMessage());
