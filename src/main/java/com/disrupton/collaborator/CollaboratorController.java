@@ -1,7 +1,5 @@
-package com.disrupton.controller;
+package com.disrupton.collaborator;
 
-import com.disrupton.dto.CollaboratorDto;
-import com.disrupton.service.CollaboratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

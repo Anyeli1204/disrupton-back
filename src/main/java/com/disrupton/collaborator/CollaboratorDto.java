@@ -1,4 +1,4 @@
-package com.disrupton.dto;
+package com.disrupton.collaborator;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

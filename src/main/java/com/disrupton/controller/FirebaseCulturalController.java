@@ -25,55 +25,6 @@ public class FirebaseCulturalController {
     private final FirebaseStorageService storageService;
     private final KiriEngineService kiriEngineService;
 
-    // ===== ENDPOINTS DE USUARIOS =====
-
-    /**
-     * Crear nuevo usuario
-     */
-    @PostMapping("/users")
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto user) {
-        try {
-            log.info("👤 Creando nuevo usuario: {}", user.getEmail());
-            UserDto savedUser = userService.saveUser(user);
-            return ResponseEntity.ok(savedUser);
-        } catch (Exception e) {
-            log.error("❌ Error al crear usuario: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    /**
-     * Obtener usuario por ID
-     */
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable String userId) {
-        try {
-            log.info("🔍 Obteniendo usuario: {}", userId);
-            UserDto user = userService.getUserById(userId);
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            log.error("❌ Error al obtener usuario: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    /**
-     * Obtener todos los usuarios
-     */
-    @GetMapping("/users")
-    public ResponseEntity<List<UserDto>> getAllUsers() {
-        try {
-            log.info("📋 Obteniendo todos los usuarios");
-            List<UserDto> users = userService.getAllUsers();
-            return ResponseEntity.ok(users);
-        } catch (Exception e) {
-            log.error("❌ Error al obtener usuarios: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
 
     // ===== ENDPOINTS DE OBJETOS CULTURALES =====
 
@@ -213,7 +164,7 @@ public class FirebaseCulturalController {
     @PostMapping("/comments")
     public ResponseEntity<CommentDto> addComment(@RequestBody CommentDto comment) {
         try {
-            log.info("💬 Agregando comentario al objeto: {}", comment.getObjectId());
+            log.info("💬 Agregando comentario al objeto: {}", comment.getCulturalObjectId());
             CommentDto savedComment = commentService.saveComment(comment);
             return ResponseEntity.ok(savedComment);
         } catch (Exception e) {

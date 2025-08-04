@@ -19,7 +19,9 @@ public class ModerationService {
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     public boolean isCommentSafe(String comment) throws Exception {
-        String prompt = "Evalúa si el siguiente comentario es apropiado y no contiene lenguaje ofensivo, agresivo, impertinente, sexual, violento o discriminatorio. Responde solo con 'APROBADO' o 'RECHAZADO'.\n\nComentario: " + comment;
+        String prompt = "RECHAZA si contiene: lenguaje ofensivo, palabras soeces, agresividad, contenido sexual/violento, " +
+                "discriminación, odio cultural (ej: \"detesto\", \"horrible\", \"primitivo\"), spam o insultos. En caso contrario APRUEBALO." +
+                "Responde solo con 'APROBADO' o 'RECHAZADO'.\n\nComentario: " + comment;
         String response = callGemini(prompt);
         return response.trim().toUpperCase().contains("APROBADO");
     }

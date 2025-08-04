@@ -23,7 +23,7 @@ public class FirebaseCommentService {
      */
 
     public CommentDto saveComment(CommentDto comment) throws ExecutionException, InterruptedException {
-        log.info("💬 Guardando comentario para objeto: {}", comment.getObjectId());
+        log.info("💬 Guardando comentario para objeto: {}", comment.getCulturalObjectId());
         
         // Establecer timestamp de creación si no existe
         if (comment.getCreatedAt() == null) {

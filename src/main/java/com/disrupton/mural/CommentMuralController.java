@@ -1,21 +1,20 @@
 package com.disrupton.mural;
 
-import com.disrupton.model.Comment;
+import com.disrupton.dto.CommentDto;
 import com.disrupton.moderation.ModerationService;
 import com.disrupton.service.CommentService;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 @RestController
-@RequestMapping("/api/comentarios")
+@RequestMapping("/api/mural")
+@Slf4j
 @RequiredArgsConstructor
 public class CommentMuralController {
 
@@ -24,7 +23,7 @@ public class CommentMuralController {
     private final MuralService muralService;
 
 
-    @PostMapping("/mural")
+    @PostMapping("/")
     public ResponseEntity<Map<String, Object>> crearPregunta(@RequestBody Map<String, Object> request) {
         Map<String, Object> response = new HashMap<>();
         try {
@@ -50,23 +49,20 @@ public class CommentMuralController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/mural/{preguntaId}")
-    public ResponseEntity<List<Comment>> obtenerComentarios(
-            @PathVariable String preguntaId, @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        try {
-            List<Comment> comentarios = comentarioService.obtenerComentariosMural(preguntaId, page, size);
-            return ResponseEntity.ok(comentarios);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    @GetMapping("/comentarios/{preguntaId}")
+    public ResponseEntity<List<CommentDto>> listarComentariosPorPregunta(@PathVariable String preguntaId) throws Exception {
+        List<CommentDto> comentarios = comentarioService.getCommentsByPreguntaId(preguntaId);
+        return ResponseEntity.ok(comentarios);
     }
 
 
-    @PostMapping("/mural/{preguntaId}")
-    public ResponseEntity<Map<String, Object>> comentarMural(@PathVariable String preguntaId,
-                                                             @RequestBody Map<String, String> request) {
-        String comentario = request.get("comentario");
+    @PostMapping("/comentarios")
+    public ResponseEntity<?> comentarMural(@RequestBody CommentDto request) {
+        String comentario = request.getText();
+        String preguntaId = request.getPreguntaId();
+        if (comentario == null || comentario.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("El contenido del comentario no puede estar vacío.");
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("comentario", comentario);
@@ -81,7 +77,7 @@ public class CommentMuralController {
             response.put("aprobado", esSeguro);
 
             if (esSeguro) {
-                comentarioService.saveCommentMural(comentario, preguntaId, true, tiempoRespuesta);
+                comentarioService.saveCommentToMural(request);
                 response.put("mensaje", "✅ Comentario para mural aprobado y guardado.");
             } else {
                 response.put("rechazado", true);
@@ -96,26 +92,41 @@ public class CommentMuralController {
 
         return ResponseEntity.ok(response);
     }
-    @DeleteMapping("/mural/{preguntaId}")
-    public ResponseEntity<String> eliminarComentarioMural(
-            @PathVariable String preguntaId,
-            @RequestBody Map<String, String> request) {
-        String comentarioId = request.get("id");
 
-        if (comentarioId == null || comentarioId.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("El ID del comentario es obligatorio.");
-        }
+    @DeleteMapping("/{preguntaId}")
+    public ResponseEntity<Map<String, Object>> eliminarComentario(
+            @PathVariable String preguntaId,
+            @RequestParam String commentId,
+            @RequestParam String userId) {
+
+        Map<String, Object> response = new HashMap<>();
 
         try {
-            boolean eliminado = comentarioService.deleteComment(comentarioId);
+            log.info("🗑️ Intentando eliminar comentario {} del objeto {} por usuario {}",
+                    commentId, preguntaId, userId);
+
+            boolean eliminado = comentarioService.deleteCommentMural(commentId, userId);
+
             if (eliminado) {
-                return ResponseEntity.ok("Comentario eliminado exitosamente.");
+                response.put("mensaje", "✅ Comentario eliminado exitosamente.");
+                response.put("commentId", commentId);
+                response.put("preguntaId", preguntaId);
+                response.put("eliminado", true);
+                log.info("✅ Comentario {} eliminado exitosamente", commentId);
+                return ResponseEntity.ok(response);
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró el comentario con ese ID.");
+                response.put("mensaje", "❌ No se pudo eliminar el comentario. Verifica que seas el autor.");
+                response.put("eliminado", false);
+                log.warn("⚠️ No se pudo eliminar comentario {} - Sin permisos o no existe", commentId);
+                return ResponseEntity.badRequest().body(response);
             }
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al eliminar comentario: " + e.getMessage());
+            log.error("❌ Error al eliminar comentario {}: {}", commentId, e.getMessage(), e);
+            response.put("error", e.getMessage());
+            response.put("mensaje", "❌ Error interno al eliminar comentario.");
+            response.put("eliminado", false);
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 

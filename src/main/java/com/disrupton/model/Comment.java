@@ -15,7 +15,6 @@ public class Comment {
     @PropertyName("createdAt")
     private Timestamp createdAt;
 
-    @PropertyName("isModerated")
     private boolean isModerated;
 
     @PropertyName("culturalObjectId")
@@ -29,4 +28,5 @@ public class Comment {
 
     @PropertyName("preguntaId")
     private String preguntaId;
+
 }

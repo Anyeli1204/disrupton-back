@@ -1,6 +1,5 @@
-package com.disrupton.service;
+package com.disrupton.collaborator;
 
-import com.disrupton.dto.CollaboratorDto;
 import com.google.cloud.firestore.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
