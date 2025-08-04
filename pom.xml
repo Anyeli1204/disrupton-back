@@ -76,6 +76,13 @@
             <version>9.2.0</version>
         </dependency>
         
+        <!-- Firebase Firestore -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-firestore</artifactId>
+            <version>3.14.0</version>
+        </dependency>
+        
         <!-- Jackson para manejo de JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
