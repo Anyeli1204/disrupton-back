@@ -1,51 +1,24 @@
 package com.disrupton.service;
 
-import com.disrupton.dto.AvatarDto;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.disrupton.model.Avatar;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Servicio simplificado para integrar con Gemini API
  * Los avatares no tienen conocimiento propio, todo viene de Gemini
  */
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class GeminiAvatarService {
-
-    private final AvatarService avatarService;
     
     /**
      * Procesa un mensaje del usuario y obtiene respuesta de Gemini API
      */
-    public Map<String, Object> processUserMessage(String avatarId, String userId, String userMessage) 
-            throws ExecutionException, InterruptedException {
-        
-        // Obtener información del avatar para personalizar el contexto
-        AvatarDto avatar = avatarService.getAvatarById(avatarId);
-        
-        if (avatar == null) {
-            throw new IllegalArgumentException("Avatar no encontrado con ID: " + avatarId);
-        }
+    public String processUserMessage(Avatar avatar, String userMessage) {
         
         // Aquí integrarías con Gemini API real
-        String geminiResponse = generateSimulatedResponse(avatar.getType(), userMessage);
+        String geminiResponse = generateSimulatedResponse(avatar.getType().toString(), userMessage);
         
-        // Retornar respuesta simple
-        Map<String, Object> response = new HashMap<>();
-        response.put("avatarId", avatarId);
-        response.put("avatarType", avatar.getType());
-        response.put("avatarName", avatar.getDisplayName());
-        response.put("userMessage", userMessage);
-        response.put("response", geminiResponse);
-        response.put("timestamp", System.currentTimeMillis());
-        
-        return response;
+        return geminiResponse;
     }
     
     /**
