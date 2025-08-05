@@ -36,6 +36,17 @@ public class CulturalObject {
     private String captureNotes; // Notas sobre la captura
     private String region; // Región de origen
     
+    // Información de ubicación
+    private Double latitude;
+    private Double longitude;
+    private String department; // Departamento/Estado
+    private String district; // Distrito/Suburbio
+    private String street; // Calle
+    private String city; // Ciudad
+    private String country; // País
+    private String postalCode; // Código postal
+    private String fullAddress; // Dirección completa
+    
     // Enums
     public enum Status {
         DRAFT, PENDING_REVIEW, APPROVED, REJECTED

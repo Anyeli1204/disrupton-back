@@ -24,6 +24,12 @@ public class CulturalUploadRequest {
     // Información del usuario
     private String userId;
     
+    // Información de ubicación (opcional - se puede obtener automáticamente)
+    private Double latitude;
+    private Double longitude;
+    private String address; // Dirección para geocodificación
+    private Boolean autoLocation; // Si es true, se obtiene automáticamente la ubicación del usuario
+    
     public enum CulturalType {
         ARTESANIA, GASTRONOMIA, MUSICA, DANZA, TEXTIL, CERAMICA, 
         ARQUITECTURA, FESTIVAL, RITUAL, LENGUAJE, TRADICION, OTRO

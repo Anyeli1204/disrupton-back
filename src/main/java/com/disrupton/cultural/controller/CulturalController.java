@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -74,7 +75,16 @@ public class CulturalController {
             @RequestParam(value = "story", required = false) String story,
             @RequestParam(value = "captureNotes", required = false) String captureNotes,
             @RequestParam(value = "fileFormat", defaultValue = "GLB") String fileFormat,
+<<<<<<< HEAD:src/main/java/com/disrupton/controller/CulturalController.java
+            @RequestParam("userId") Long userId,
+            @RequestParam(value = "latitude", required = false) Double latitude,
+            @RequestParam(value = "longitude", required = false) Double longitude,
+            @RequestParam(value = "address", required = false) String address,
+            @RequestParam(value = "autoLocation", required = false, defaultValue = "false") Boolean autoLocation,
+            HttpServletRequest httpRequest) {
+=======
             @RequestParam("userId") String userId) {
+>>>>>>> main:src/main/java/com/disrupton/cultural/controller/CulturalController.java
         
         try {
             log.info("Recibida solicitud para subir objeto cultural: {}", name);
@@ -92,9 +102,13 @@ public class CulturalController {
             request.setCaptureNotes(captureNotes);
             request.setFileFormat(fileFormat);
             request.setUserId(userId);
+            request.setLatitude(latitude);
+            request.setLongitude(longitude);
+            request.setAddress(address);
+            request.setAutoLocation(autoLocation);
             
             // Procesar solicitud
-            CulturalObject result = culturalService.uploadCulturalObject(request);
+            CulturalObject result = culturalService.uploadCulturalObject(request, httpRequest);
             
             return ResponseEntity.ok(result);
             
