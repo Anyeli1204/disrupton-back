@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Subida Objeto Cultural con Ubicación - Disrupton</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        input, textarea, select, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            padding: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .location-section {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .location-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .location-toggle button {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+        }
+        .location-toggle button.active {
+            background-color: #28a745;
+        }
+        .location-toggle button:not(.active) {
+            background-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ Test Subida Objeto Cultural con Ubicación</h1>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="section">
+                <h2>📝 Información del Objeto Cultural</h2>
+                <input type="text" id="name" placeholder="Nombre del objeto cultural" required>
+                <textarea id="description" placeholder="Descripción del objeto cultural" rows="3" required></textarea>
+                <input type="text" id="origin" placeholder="Lugar de origen" required>
+                <select id="culturalType" required>
+                    <option value="">Seleccionar tipo de cultura</option>
+                    <option value="ARTESANIA">Artesanía</option>
+                    <option value="GASTRONOMIA">Gastronomía</option>
+                    <option value="MUSICA">Música</option>
+                    <option value="DANZA">Danza</option>
+                    <option value="TEXTIL">Textil</option>
+                    <option value="CERAMICA">Cerámica</option>
+                    <option value="ARQUITECTURA">Arquitectura</option>
+                    <option value="FESTIVAL">Festival</option>
+                    <option value="RITUAL">Ritual</option>
+                    <option value="LENGUAJE">Lenguaje</option>
+                    <option value="TRADICION">Tradición</option>
+                    <option value="OTRO">Otro</option>
+                </select>
+                <input type="text" id="region" placeholder="Región" required>
+                <textarea id="localPhrases" placeholder="Frases locales relacionadas (opcional)" rows="2"></textarea>
+                <textarea id="story" placeholder="Historia o anécdota (opcional)" rows="3"></textarea>
+                <textarea id="captureNotes" placeholder="Notas sobre la captura (opcional)" rows="2"></textarea>
+            </div>
+
+            <div class="section">
+                <h2>📸 Imágenes del Objeto</h2>
+                <p><strong>Importante:</strong> Se requieren al menos 20 imágenes para generar el modelo 3D</p>
+                <input type="file" id="imagesFiles" multiple accept="image/*" required>
+                <select id="fileFormat">
+                    <option value="GLB">GLB (recomendado)</option>
+                    <option value="OBJ">OBJ</option>
+                    <option value="FBX">FBX</option>
+                    <option value="STL">STL</option>
+                </select>
+            </div>
+
+            <div class="section location-section">
+                <h2>📍 Información de Ubicación</h2>
+                <p><strong>Nota:</strong> Todos los objetos culturales se crean con ubicación. Si no seleccionas una opción, se usará geolocalización automática.</p>
+                <div class="location-toggle">
+                    <button type="button" id="btnCoords" class="active" onclick="setLocationMode('coords')">Usar Coordenadas GPS</button>
+                    <button type="button" id="btnAddress" onclick="setLocationMode('address')">Usar Dirección</button>
+                    <button type="button" id="btnCurrent" onclick="getCurrentLocation()">Mi Ubicación Actual</button>
+                    <button type="button" id="btnAuto" onclick="setLocationMode('auto')">Ubicación Automática</button>
+                    <button type="button" id="btnDefault" onclick="setLocationMode('default')">Sin Especificar (Automático)</button>
+                </div>
+                
+                <div id="coordsSection">
+                    <input type="number" id="latitude" placeholder="Latitud (ej: -12.0464)" step="any">
+                    <input type="number" id="longitude" placeholder="Longitud (ej: -77.0428)" step="any">
+                </div>
+                
+                <div id="addressSection" style="display: none;">
+                    <input type="text" id="address" placeholder="Dirección (ej: Plaza Mayor, Lima, Perú)">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>👤 Información del Usuario</h2>
+                <input type="number" id="userId" placeholder="ID del usuario" value="1" required>
+            </div>
+
+            <button type="submit">🚀 Subir Objeto Cultural</button>
+        </form>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        let currentLocationMode = 'coords';
+
+        function setLocationMode(mode) {
+            currentLocationMode = mode;
+            
+            // Actualizar botones
+            document.getElementById('btnCoords').classList.toggle('active', mode === 'coords');
+            document.getElementById('btnAddress').classList.toggle('active', mode === 'address');
+            document.getElementById('btnAuto').classList.toggle('active', mode === 'auto');
+            document.getElementById('btnDefault').classList.toggle('active', mode === 'default');
+            
+            // Mostrar/ocultar secciones
+            document.getElementById('coordsSection').style.display = mode === 'coords' ? 'block' : 'none';
+            document.getElementById('addressSection').style.display = mode === 'address' ? 'block' : 'none';
+            
+            // Limpiar campos no utilizados
+            if (mode === 'coords') {
+                document.getElementById('address').value = '';
+            } else if (mode === 'address') {
+                document.getElementById('latitude').value = '';
+                document.getElementById('longitude').value = '';
+            } else if (mode === 'auto' || mode === 'default') {
+                document.getElementById('latitude').value = '';
+                document.getElementById('longitude').value = '';
+                document.getElementById('address').value = '';
+            }
+        }
+
+        function getCurrentLocation() {
+            if (!navigator.geolocation) {
+                alert('La geolocalización no está soportada en este navegador');
+                return;
+            }
+
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').className = 'result';
+            document.getElementById('result').textContent = 'Obteniendo ubicación actual...';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lon;
+                    setLocationMode('coords');
+                    
+                    document.getElementById('result').className = 'result success';
+                    document.getElementById('result').textContent = `Ubicación obtenida:\nLatitud: ${lat}\nLongitud: ${lon}`;
+                },
+                (error) => {
+                    document.getElementById('result').className = 'result error';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            document.getElementById('result').textContent = 'Permiso denegado para obtener ubicación';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            document.getElementById('result').textContent = 'Información de ubicación no disponible';
+                            break;
+                        case error.TIMEOUT:
+                            document.getElementById('result').textContent = 'Tiempo de espera agotado';
+                            break;
+                        default:
+                            document.getElementById('result').textContent = `Error desconocido: ${error.message}`;
+                    }
+                }
+            );
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = 'Procesando solicitud...';
+
+            try {
+                const formData = new FormData();
+                
+                // Información básica
+                formData.append('name', document.getElementById('name').value);
+                formData.append('description', document.getElementById('description').value);
+                formData.append('origin', document.getElementById('origin').value);
+                formData.append('culturalType', document.getElementById('culturalType').value);
+                formData.append('region', document.getElementById('region').value);
+                formData.append('localPhrases', document.getElementById('localPhrases').value);
+                formData.append('story', document.getElementById('story').value);
+                formData.append('captureNotes', document.getElementById('captureNotes').value);
+                formData.append('fileFormat', document.getElementById('fileFormat').value);
+                formData.append('userId', document.getElementById('userId').value);
+                
+                // Información de ubicación
+                if (currentLocationMode === 'coords') {
+                    const lat = document.getElementById('latitude').value;
+                    const lon = document.getElementById('longitude').value;
+                    if (lat && lon) {
+                        formData.append('latitude', lat);
+                        formData.append('longitude', lon);
+                    }
+                } else if (currentLocationMode === 'address') {
+                    const address = document.getElementById('address').value;
+                    if (address) {
+                        formData.append('address', address);
+                    }
+                } else if (currentLocationMode === 'auto') {
+                    formData.append('autoLocation', 'true');
+                } else if (currentLocationMode === 'default') {
+                    // No enviar parámetros de ubicación - se usará geolocalización automática por defecto
+                }
+                
+                // Imágenes
+                const imageFiles = document.getElementById('imagesFiles').files;
+                for (let i = 0; i < imageFiles.length; i++) {
+                    formData.append('imagesFiles', imageFiles[i]);
+                }
+
+                const response = await fetch(`${API_BASE}/cultural/upload-object`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Objeto cultural subido exitosamente!\n\nInformación de ubicación:\n` +
+                        `Latitud: ${result.latitude || 'No especificada'}\n` +
+                        `Longitud: ${result.longitude || 'No especificada'}\n` +
+                        `Departamento: ${result.department || 'No especificado'}\n` +
+                        `Ciudad: ${result.city || 'No especificada'}\n` +
+                        `País: ${result.country || 'No especificado'}\n` +
+                        `Dirección completa: ${result.fullAddress || 'No especificada'}\n\n` +
+                        `Datos completos:\n${JSON.stringify(result, null, 2)}`;
+                } else {
+                    const error = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Error: ${error.error}\nMensaje: ${error.message}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error de conexión: ${error.message}`;
+            }
+        });
+
+        // Ejemplo de datos para pruebas
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('name').value = 'Artefacto de Prueba';
+            document.getElementById('description').value = 'Descripción de prueba del objeto cultural';
+            document.getElementById('origin').value = 'Lima, Perú';
+            document.getElementById('culturalType').value = 'ARTESANIA';
+            document.getElementById('region').value = 'Lima';
+            document.getElementById('latitude').value = '-12.0464';
+            document.getElementById('longitude').value = '-77.0428';
+        });
+    </script>
+</body>
+</html> 

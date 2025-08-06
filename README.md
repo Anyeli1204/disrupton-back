@@ -382,28 +382,7 @@ Las validaciones se pueden extender en los modelos `ImageUploadRequest` y `Video
 
 ## 📄 Licencia
 
-Este proyecto está bajo la licencia MIT.
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
-
-## 📞 Soporte
-
-Para soporte técnico o preguntas:
-- Crear un issue en GitHub
-- Contactar al equipo de desarrollo
-
----
-
-**Nota**: Asegúrate de tener una API key válida de KIRI Engine antes de usar este servicio.
-
----
+Este proyecto está bajo la licencia MIT
 
 ## 🔥 **Integración con Firebase**
 
@@ -455,11 +434,3 @@ PUT    /api/firebase/cultural/objects/{objectId}/status # Actualizar estado
 POST   /api/firebase/cultural/objects/{objectId}/like  # Dar like
 DELETE /api/firebase/cultural/objects/{objectId}/like  # Quitar like
 ```
-
-### **Próximos Pasos:**
-1. **Configurar proyecto Firebase** ✅ (Ver `FIREBASE_SETUP.md`)
-2. **Implementar autenticación** ✅ (Firebase Auth integrado)
-3. **Crear estructura de Firestore** ✅ (Servicios implementados)
-4. **Configurar reglas de seguridad** ✅ (Documentadas)
-5. **Integrar con KIRI Engine API** ✅ (Ya implementado)
-6. **Desarrollar aplicación móvil** 🔄 (En progreso) 

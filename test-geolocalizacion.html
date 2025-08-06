@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Geolocalización - Disrupton</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input {
+            width: 200px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Test de Geolocalización - Disrupton</h1>
+        
+        <div class="section">
+            <h2>📍 Reverse Geocoding (Coordenadas → Dirección)</h2>
+            <p>Obtiene información de ubicación a partir de coordenadas GPS</p>
+            <input type="number" id="lat" placeholder="Latitud (ej: -12.0464)" step="any">
+            <input type="number" id="lon" placeholder="Longitud (ej: -77.0428)" step="any">
+            <button onclick="reverseGeocode()">Obtener Dirección</button>
+            <div id="reverseResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Forward Geocoding (Dirección → Coordenadas)</h2>
+            <p>Obtiene coordenadas GPS a partir de una dirección</p>
+            <input type="text" id="address" placeholder="Dirección (ej: Plaza Mayor, Lima, Perú)" style="width: 400px;">
+            <button onclick="forwardGeocode()">Obtener Coordenadas</button>
+            <div id="forwardResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>📱 Obtener Ubicación Actual</h2>
+            <p>Usa la geolocalización del navegador para obtener tu ubicación actual</p>
+            <button onclick="getCurrentLocation()">Obtener Mi Ubicación</button>
+            <div id="currentLocationResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/geolocalizacion';
+
+        async function reverseGeocode() {
+            const lat = document.getElementById('lat').value;
+            const lon = document.getElementById('lon').value;
+            const resultDiv = document.getElementById('reverseResult');
+
+            if (!lat || !lon) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Por favor ingresa latitud y longitud';
+                return;
+            }
+
+            try {
+                resultDiv.textContent = 'Consultando...';
+                const response = await fetch(`${API_BASE}/reverse?lat=${lat}&lon=${lon}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'Error al obtener la información de ubicación';
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function forwardGeocode() {
+            const address = document.getElementById('address').value;
+            const resultDiv = document.getElementById('forwardResult');
+
+            if (!address) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Por favor ingresa una dirección';
+                return;
+            }
+
+            try {
+                resultDiv.textContent = 'Consultando...';
+                const response = await fetch(`${API_BASE}/forward?address=${encodeURIComponent(address)}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'Error al obtener las coordenadas';
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function getCurrentLocation() {
+            const resultDiv = document.getElementById('currentLocationResult');
+            
+            if (!navigator.geolocation) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'La geolocalización no está soportada en este navegador';
+                return;
+            }
+
+            resultDiv.textContent = 'Obteniendo ubicación...';
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    resultDiv.textContent = `Ubicación obtenida:\nLatitud: ${lat}\nLongitud: ${lon}\n\nConsultando información detallada...`;
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/reverse?lat=${lat}&lon=${lon}`);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            resultDiv.className = 'result success';
+                            resultDiv.textContent = `Ubicación actual:\nLatitud: ${lat}\nLongitud: ${lon}\n\nInformación detallada:\n${JSON.stringify(data, null, 2)}`;
+                        } else {
+                            resultDiv.className = 'result error';
+                            resultDiv.textContent = `Ubicación obtenida pero error al obtener información detallada:\nLatitud: ${lat}\nLongitud: ${lon}`;
+                        }
+                    } catch (error) {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent = `Ubicación obtenida pero error al consultar API:\nLatitud: ${lat}\nLongitud: ${lon}\nError: ${error.message}`;
+                    }
+                },
+                (error) => {
+                    resultDiv.className = 'result error';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            resultDiv.textContent = 'Permiso denegado para obtener ubicación';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            resultDiv.textContent = 'Información de ubicación no disponible';
+                            break;
+                        case error.TIMEOUT:
+                            resultDiv.textContent = 'Tiempo de espera agotado';
+                            break;
+                        default:
+                            resultDiv.textContent = `Error desconocido: ${error.message}`;
+                    }
+                }
+            );
+        }
+
+        // Ejemplos predefinidos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ejemplo de coordenadas de Lima
+            document.getElementById('lat').value = '-12.0464';
+            document.getElementById('lon').value = '-77.0428';
+            
+            // Ejemplo de dirección
+            document.getElementById('address').value = 'Plaza Mayor, Lima, Perú';
+        });
+    </script>
+</body>
+</html> 
