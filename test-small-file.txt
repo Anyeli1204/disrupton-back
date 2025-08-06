@@ -1,0 +1,2 @@
+Este es un archivo de prueba para verificar que Firebase Storage funciona correctamente.
+Timestamp: 2025-08-04 11:10:00 

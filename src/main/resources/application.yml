@@ -11,8 +11,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 50MB
-      max-request-size: 500MB
+      max-file-size: 500MB
+      max-request-size: 1GB
       file-size-threshold: 2KB
 
 # Configuración de KIRI Engine API
@@ -25,9 +25,9 @@ kiri:
 # Configuración de Firebase
 firebase:
   project:
-    id: ${FIREBASE_PROJECT_ID:disrupton2025}
+    id: ${FIREBASE_PROJECT_ID:disrupton-new}
     storage:
-      bucket: ${FIREBASE_STORAGE_BUCKET:disrupton2025.firebasestorage.app}
+      bucket: ${FIREBASE_STORAGE_BUCKET:disrupton-new.firebasestorage.app}
   service:
     account:
       file: ${FIREBASE_SERVICE_ACCOUNT_FILE:firebase-service-account.json}

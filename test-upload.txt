@@ -1,0 +1,4 @@
+Este es un archivo de prueba para verificar que la subida a Firebase Storage funciona correctamente.
+Timestamp: 2025-08-06 10:33:00
+Proyecto: Disrupton
+Módulo: Storage 
