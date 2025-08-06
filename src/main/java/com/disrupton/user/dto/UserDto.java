@@ -14,4 +14,7 @@ public class UserDto {
     private String email;
     private String role; // student, moderator, admin
     private Timestamp createdAt;
-} 
+
+    private Boolean isPremium; // si tiene premium activo
+    private Timestamp premiumExpiresAt; // opcional: cuándo expira
+}
