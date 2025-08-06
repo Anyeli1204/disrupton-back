@@ -2,6 +2,8 @@ package com.disrupton.user.service;
 
 import com.disrupton.user.dto.UserDto;
 import com.google.api.core.ApiFuture;
+import com.google.cloud.Date;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -178,4 +180,5 @@ public class FirebaseUserService {
         
         return document.exists();
     }
+
 } 
