@@ -14,11 +14,6 @@ public class KiriEngineConfig {
     @Value("${kiri.engine.api.base-url:https://api.kiriengine.app/api/v1}")
     private String baseUrl;
     
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-    
     public String getApiKey() {
         return apiKey;
     }

@@ -9,9 +9,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentDto {
-    private String id; // ID del documento en Firestore
-    private String objectId; // reference a cultural_objects
-    private String userId; // reference a users
+    private String id;
+
+    //@PropertyName("text")
     private String text;
+    //@PropertyName("createdAt")
     private Timestamp createdAt;
+
+    //@PropertyName("culturalObjectId")
+    private String culturalObjectId; //en caso que sea un comentario de un objeto cultural
+
+    //@PropertyName("userId")
+    private String userId;
+
+    //@PropertyName("parentCommentId")
+    private String parentCommentId;
+
+    //@PropertyName("preguntaId")
+    private String preguntaId; //en caso que sea un comentario de una pregunta del mural
 } 
