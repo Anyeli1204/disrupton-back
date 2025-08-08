@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Configuración para inicializar los 3 avatares predeterminados al iniciar la aplicación
  */
-@Configuration
+@Configuration("sharedAvatarConfig")
 @RequiredArgsConstructor
 @Slf4j
 public class AvatarConfig implements ApplicationRunner {

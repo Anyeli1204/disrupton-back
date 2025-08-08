@@ -1,5 +1,7 @@
-package com.disrupton.dto;
+package com.disrupton.dashboard.dto;
 
+import com.disrupton.analytics.dto.CulturalObjectViewMetricDto;
+import com.disrupton.campus.dto.CampusZoneActivityDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

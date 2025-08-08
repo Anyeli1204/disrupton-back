@@ -15,10 +15,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Configuración para WebClient usado en integraciones externas
  */
-@Configuration
+@Configuration("sharedWebClientConfig")
 public class WebClientConfig {
 
-    @Bean
+    @Bean("sharedWebClient")
     public WebClient webClient() {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)

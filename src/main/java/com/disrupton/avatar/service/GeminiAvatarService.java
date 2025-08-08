@@ -52,4 +52,20 @@ public class GeminiAvatarService {
             return baseResponse + "el Perú es un país increíble con mucha historia y cultura para compartir.";
         }
     }
+    
+    /**
+     * Obtiene el historial de conversación
+     */
+    public String getConversationHistory(String avatarId, String userId, int limit) {
+        // Implementación simplificada - en producción consultaría la base de datos
+        return "Historial de conversación simulado para avatar: " + avatarId + " y usuario: " + userId;
+    }
+    
+    /**
+     * Obtiene el conteo de uso del avatar
+     */
+    public Long getAvatarUsageCount(String avatarId) {
+        // Implementación simplificada - en producción consultaría métricas reales
+        return 0L;
+    }
 }

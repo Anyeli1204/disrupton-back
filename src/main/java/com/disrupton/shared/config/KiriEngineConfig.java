@@ -8,7 +8,7 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Configuración para integración con KIRI Engine API
  */
-@Configuration
+@Configuration("sharedKiriEngineConfig")
 public class KiriEngineConfig {
     
     @Value("${kiri.engine.api.key}")
@@ -17,7 +17,7 @@ public class KiriEngineConfig {
     @Value("${kiri.engine.api.base-url:https://api.kiriengine.app/api/v1}")
     private String baseUrl;
     
-    @Bean
+    @Bean("sharedRestTemplate")
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }

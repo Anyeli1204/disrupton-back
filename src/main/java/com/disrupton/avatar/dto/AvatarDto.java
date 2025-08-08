@@ -1,4 +1,4 @@
-package com.disrupton.dto;
+package com.disrupton.avatar.dto;
 
 import lombok.Data;
 import com.google.cloud.Timestamp;

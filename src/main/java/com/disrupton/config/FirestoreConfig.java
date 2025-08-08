@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 
 @Configuration
@@ -15,6 +16,7 @@ import org.springframework.core.annotation.Order;
 public class FirestoreConfig {
 
     @Bean
+    @Primary
     @DependsOn("firebaseConfig") // Asegurar que FirebaseConfig se ejecute primero
     public Firestore firestore() {
         try {

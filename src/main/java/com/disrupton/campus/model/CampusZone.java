@@ -1,4 +1,4 @@
-package com.disrupton.campus;
+package com.disrupton.campus.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

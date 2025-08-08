@@ -1,8 +1,10 @@
 package com.disrupton.campus.service;
 
+import com.disrupton.analytics.service.FirebaseAnalyticsService;
 import com.disrupton.campus.dto.CampusZoneActivityDto;
 import com.disrupton.campus.model.CampusZone;
 import com.google.cloud.firestore.*;
+import com.google.cloud.Timestamp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -135,7 +137,7 @@ public class CampusZoneService {
             }
             
             zone.setIsActive(isActive);
-            zone.setUpdatedAt(LocalDateTime.now());
+            zone.setUpdatedAt(Timestamp.now());
             
             return updateZone(zone);
             

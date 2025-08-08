@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Configuración para integración con Gemini API
  */
-@Configuration
+@Configuration("sharedGeminiConfig")
 @ConfigurationProperties(prefix = "gemini")
 @Getter
 @Setter

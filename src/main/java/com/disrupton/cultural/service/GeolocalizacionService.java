@@ -1,6 +1,6 @@
-package com.disrupton.service;
+package com.disrupton.cultural.service;
 
-import com.disrupton.dto.LocationDto;
+import com.disrupton.user.dto.LocationDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;

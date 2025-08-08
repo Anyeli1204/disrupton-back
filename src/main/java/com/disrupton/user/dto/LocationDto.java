@@ -1,4 +1,4 @@
-package com.disrupton.dto;
+package com.disrupton.user.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

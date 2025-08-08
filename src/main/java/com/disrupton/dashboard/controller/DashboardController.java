@@ -1,8 +1,15 @@
 package com.disrupton.dashboard.controller;
 
+import com.disrupton.analytics.dto.CulturalObjectViewMetricDto;
+import com.disrupton.analytics.dto.UserActivityDto;
+import com.disrupton.analytics.service.AnalyticsCalculationService;
+import com.disrupton.campus.dto.CampusZoneActivityDto;
 import com.disrupton.dashboard.dto.*;
 import com.disrupton.dashboard.service.DashboardAnalyticsService;
-import com.disrupton.analytics.service.AnalyticsCalculationService;
+import com.disrupton.shared.model.CulturalObjectInteraction;
+import com.disrupton.shared.model.UserSession;
+import com.disrupton.shared.model.SocialInteraction;
+import com.disrupton.shared.model.AnalyticsEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;

@@ -1,4 +1,4 @@
-package com.disrupton.dto;
+package com.disrupton.shared.dto;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.GeoPoint;

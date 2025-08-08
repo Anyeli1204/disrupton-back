@@ -98,4 +98,38 @@ public class AvatarService {
         
         return null;
     }
+    
+    /**
+     * Crea un nuevo avatar
+     */
+    public Avatar createAvatar(Avatar avatar) throws ExecutionException, InterruptedException {
+        if (avatar.getAvatarId() == null) {
+            avatar.setAvatarId(UUID.randomUUID().toString());
+        }
+        avatar.onCreate();
+        
+        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(avatar.getAvatarId());
+        docRef.set(avatar).get();
+        
+        return avatar;
+    }
+    
+    /**
+     * Actualiza un avatar existente
+     */
+    public Avatar updateAvatar(Avatar avatar) throws ExecutionException, InterruptedException {
+        avatar.onUpdate();
+        
+        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(avatar.getAvatarId());
+        docRef.set(avatar).get();
+        
+        return avatar;
+    }
+    
+    /**
+     * Elimina un avatar por su ID
+     */
+    public void deleteAvatar(String avatarId) throws ExecutionException, InterruptedException {
+        firestore.collection(COLLECTION_NAME).document(avatarId).delete().get();
+    }
 }

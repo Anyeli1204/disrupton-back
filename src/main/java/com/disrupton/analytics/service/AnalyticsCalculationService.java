@@ -1,6 +1,7 @@
 package com.disrupton.analytics.service;
 
 import com.disrupton.analytics.dto.*;
+import com.disrupton.campus.dto.CampusZoneActivityDto;
 import com.disrupton.dashboard.dto.*;
 import com.disrupton.user.dto.*;
 import com.disrupton.cultural.dto.*;
@@ -285,7 +286,7 @@ public class AnalyticsCalculationService {
                     .sum();
             
             if (totalViews > 0) {
-                double socialEngagementRate = (totalSocialInteractions.doubleValue() / totalViews) * 100;
+                double socialEngagementRate = ((double) totalSocialInteractions / totalViews) * 100;
                 insights.add(String.format("Social engagement rate: %.1f%%", socialEngagementRate));
             }
         }

@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import java.time.LocalDateTime;
+import com.google.cloud.Timestamp;
 
 /**
  * Entidad Avatar - Representa un avatar cultural simplificado
@@ -22,12 +22,15 @@ public class Avatar {
     // Tipo de avatar (solo 3 tipos disponibles)
     private AvatarType type;
     
+    // Nombre para mostrar del avatar
+    private String displayName;
+    
     // URL del modelo 3D del avatar
     private String avatar3DModelUrl;
     
     // Metadatos
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
     
     // Enums
     public enum AvatarType {
@@ -51,15 +54,15 @@ public class Avatar {
      */
     public void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = Timestamp.now();
         }
-        updatedAt = LocalDateTime.now();
+        updatedAt = Timestamp.now();
     }
     
     /**
      * Método para actualizar timestamp de modificación
      */
     public void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Timestamp.now();
     }
 }

@@ -18,7 +18,7 @@ import java.io.InputStream;
 /**
  * Configuración para Firebase Firestore
  */
-@Configuration
+@Configuration("sharedFirebaseConfig")
 @Slf4j
 public class FirebaseConfig {
 
@@ -47,7 +47,7 @@ public class FirebaseConfig {
         }
     }
 
-    @Bean
+    @Bean("sharedFirestore")
     public Firestore firestore() {
         return FirestoreClient.getFirestore();
     }

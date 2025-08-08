@@ -1,4 +1,4 @@
-package com.disrupton.dto;
+package com.disrupton.campus.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
