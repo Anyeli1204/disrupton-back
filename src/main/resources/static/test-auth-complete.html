@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Prueba Completa de Autenticación - Disruptón 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .status-banner {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .status-banner.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-banner.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response-box.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .response-box.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .token-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .token-info h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .token-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .protected-endpoint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .protected-endpoint h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .step {
+            text-align: center;
+            flex: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+        }
+
+        .step.active .step-number {
+            background: #667eea;
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background: #28a745;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .step.active .step-label {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .step.completed .step-label {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Prueba Completa de Autenticación</h1>
+            <p>Disruptón 2025 - Sistema de Login y Registro</p>
+        </div>
+
+        <div id="statusBanner" class="status-banner">
+            🔄 Verificando conexión...
+        </div>
+
+        <div class="step-indicator">
+            <div class="step active" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-label">Conexión</div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-label">Registro</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">3</div>
+                <div class="step-label">Login</div>
+            </div>
+            <div class="step" id="step4">
+                <div class="step-number">4</div>
+                <div class="step-label">Verificación</div>
+            </div>
+            <div class="step" id="step5">
+                <div class="step-number">5</div>
+                <div class="step-label">API Protegida</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('register')">📝 Registro</button>
+            <button class="tab" onclick="showTab('login')">🔐 Login</button>
+            <button class="tab" onclick="showTab('verify')">✅ Verificar Token</button>
+            <button class="tab" onclick="showTab('protected')">🛡️ API Protegida</button>
+            <button class="tab" onclick="showTab('refresh')">🔄 Refrescar Token</button>
+        </div>
+
+        <!-- Tab de Registro -->
+        <div id="register" class="tab-content active">
+            <h2>📝 Registrar Nuevo Usuario</h2>
+            <p>Paso 2: Crea una nueva cuenta para probar el sistema</p>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regName">Nombre completo:</label>
+                    <input type="text" id="regName" placeholder="Ej: Juan Pérez" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regEmail">Email:</label>
+                    <input type="email" id="regEmail" placeholder="juan@ejemplo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Contraseña:</label>
+                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPhone">Teléfono (opcional):</label>
+                    <input type="tel" id="regPhone" placeholder="+51987654321">
+                </div>
+                
+                <button type="submit" class="btn">📝 Registrar Usuario</button>
+            </form>
+            
+            <div id="registerResponse" class="response-box" style="display: none;"></div>
+        </div>
+
+        <!-- Tab de Login -->
+        <div id="login" class="tab-content">
+            <h2>🔐 Iniciar Sesión</h2>
+            <p>Paso 3: Accede con las credenciales registradas</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email:</label>
+                    <input type="email" id="loginEmail" placeholder="juan@ejemplo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña:</label>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña" required>
+                </div>
+                
+                <button type="submit" class="btn">🔐 Iniciar Sesión</button>
+            </form>
+            
+            <div id="loginResponse" class="response-box" style="display: none;"></div>
+            
+            <div id="tokenInfo" class="token-info" style="display: none;">
+                <h4>🔑 Información del Token</h4>
+                <p><strong>User ID:</strong> <span id="userId"></span></p>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>Nombre:</strong> <span id="userName"></span></p>
+                <p><strong>Token:</strong> <span id="tokenPreview"></span></p>
+            </div>
+        </div>
+
+        <!-- Tab de Verificación -->
+        <div id="verify" class="tab-content">
+            <h2>✅ Verificar Token</h2>
+            <p>Paso 4: Verifica que tu token sea válido</p>
+            
+            <button onclick="verifyToken()" class="btn">✅ Verificar Token Actual</button>
+            
+            <div id="verifyResponse" class="response-box" style="display: none;"></div>
+        </div>
+
+        <!-- Tab de API Protegida -->
+        <div id="protected" class="tab-content">
+            <h2>🛡️ Acceder a API Protegida</h2>
+            <p>Paso 5: Prueba acceder a un endpoint que requiere autenticación</p>
+            
+            <div class="protected-endpoint">
+                <h4>📊 Dashboard Analytics</h4>
+                <p>Este endpoint requiere un token válido para acceder</p>
+                <button onclick="testProtectedEndpoint()" class="btn">📊 Obtener Métricas del Dashboard</button>
+            </div>
+            
+            <div id="protectedResponse" class="response-box" style="display: none;"></div>
+        </div>
+
+        <!-- Tab de Refrescar Token -->
+        <div id="refresh" class="tab-content">
+            <h2>🔄 Refrescar Token</h2>
+            <p>Obtén un nuevo token de acceso usando el refresh token</p>
+            
+            <button onclick="refreshToken()" class="btn">🔄 Refrescar Token</button>
+            
+            <div id="refreshResponse" class="response-box" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentToken = localStorage.getItem('authToken');
+        let currentRefreshToken = localStorage.getItem('refreshToken');
+        let currentUserId = localStorage.getItem('userId');
+
+        // Verificar conexión al cargar la página
+        window.onload = function() {
+            checkConnection();
+        };
+
+        function checkConnection() {
+            fetch('/api/auth/verify', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusBanner = document.getElementById('statusBanner');
+                if (data.success) {
+                    statusBanner.textContent = '✅ Conectado a la API';
+                    statusBanner.className = 'status-banner connected';
+                    updateStep(1, 'completed');
+                    updateStep(2, 'active');
+                } else {
+                    statusBanner.textContent = '❌ Error de conexión';
+                    statusBanner.className = 'status-banner disconnected';
+                }
+            })
+            .catch(error => {
+                const statusBanner = document.getElementById('statusBanner');
+                statusBanner.textContent = '❌ No se puede conectar a la API';
+                statusBanner.className = 'status-banner disconnected';
+            });
+        }
+
+        function updateStep(stepNumber, status) {
+            const step = document.getElementById(`step${stepNumber}`);
+            step.className = `step ${status}`;
+        }
+
+        function showTab(tabName) {
+            // Ocultar todos los tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Mostrar el tab seleccionado
+            document.getElementById(tabName).classList.add('active');
+            
+            // Actualizar botones
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Registro
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                displayName: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value,
+                phoneNumber: document.getElementById('regPhone').value || null
+            };
+
+            fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseBox = document.getElementById('registerResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box ' + (data.success ? 'success' : 'error');
+                responseBox.innerHTML = '<strong>Respuesta del servidor:</strong><br>' + JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    updateStep(2, 'completed');
+                    updateStep(3, 'active');
+                    
+                    // Guardar tokens
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    localStorage.setItem('userId', data.userId);
+                    
+                    currentToken = data.token;
+                    currentRefreshToken = data.refreshToken;
+                    currentUserId = data.userId;
+                    
+                    // Llenar formulario de login
+                    document.getElementById('loginEmail').value = formData.email;
+                    document.getElementById('loginPassword').value = formData.password;
+                }
+            })
+            .catch(error => {
+                const responseBox = document.getElementById('registerResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>' + error.message;
+            });
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseBox = document.getElementById('loginResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box ' + (data.success ? 'success' : 'error');
+                responseBox.innerHTML = '<strong>Respuesta del servidor:</strong><br>' + JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    updateStep(3, 'completed');
+                    updateStep(4, 'active');
+                    
+                    // Guardar tokens
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    localStorage.setItem('userId', data.userId);
+                    
+                    currentToken = data.token;
+                    currentRefreshToken = data.refreshToken;
+                    currentUserId = data.userId;
+                    
+                    // Mostrar información del token
+                    document.getElementById('userId').textContent = data.userId;
+                    document.getElementById('userEmail').textContent = data.email;
+                    document.getElementById('userName').textContent = data.displayName;
+                    document.getElementById('tokenPreview').textContent = data.token.substring(0, 50) + '...';
+                    document.getElementById('tokenInfo').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                const responseBox = document.getElementById('loginResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>' + error.message;
+            });
+        });
+
+        function verifyToken() {
+            if (!currentToken) {
+                const responseBox = document.getElementById('verifyResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>No hay token para verificar';
+                return;
+            }
+
+            fetch('/api/auth/verify', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseBox = document.getElementById('verifyResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box ' + (data.success ? 'success' : 'error');
+                responseBox.innerHTML = '<strong>Respuesta del servidor:</strong><br>' + JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    updateStep(4, 'completed');
+                    updateStep(5, 'active');
+                }
+            })
+            .catch(error => {
+                const responseBox = document.getElementById('verifyResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>' + error.message;
+            });
+        }
+
+        function testProtectedEndpoint() {
+            if (!currentToken) {
+                const responseBox = document.getElementById('protectedResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>No hay token para acceder al endpoint protegido';
+                return;
+            }
+
+            fetch('/api/analytics-dashboard/metrics?timeRange=week', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + currentToken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseBox = document.getElementById('protectedResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box success';
+                responseBox.innerHTML = '<strong>✅ Acceso exitoso a API protegida:</strong><br>' + JSON.stringify(data, null, 2);
+                
+                updateStep(5, 'completed');
+            })
+            .catch(error => {
+                const responseBox = document.getElementById('protectedResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>' + error.message;
+            });
+        }
+
+        function refreshToken() {
+            if (!currentRefreshToken) {
+                const responseBox = document.getElementById('refreshResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>No hay refresh token disponible';
+                return;
+            }
+
+            fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + currentRefreshToken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseBox = document.getElementById('refreshResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box ' + (data.success ? 'success' : 'error');
+                responseBox.innerHTML = '<strong>Respuesta del servidor:</strong><br>' + JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    // Actualizar tokens
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    
+                    currentToken = data.token;
+                    currentRefreshToken = data.refreshToken;
+                }
+            })
+            .catch(error => {
+                const responseBox = document.getElementById('refreshResponse');
+                responseBox.style.display = 'block';
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = '<strong>Error:</strong><br>' + error.message;
+            });
+        }
+    </script>
+</body>
+</html>

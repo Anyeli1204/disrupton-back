@@ -1,0 +1,248 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== REGLAS PARA USUARIOS =====
+    match /users/{userId} {
+      // Usuarios pueden leer y escribir su propio perfil
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Otros usuarios pueden leer perfiles (para mostrar información básica)
+      allow read: if request.auth != null;
+      // Solo admins pueden cambiar roles y estado
+      allow update: if request.auth != null && 
+        (request.auth.uid == userId || 
+         request.auth.token.role == 'ADMIN');
+    }
+    
+    // ===== REGLAS PARA OBJETOS CULTURALES =====
+    match /cultural_objects/{objectId} {
+      // Todos los usuarios autenticados pueden leer objetos aprobados
+      allow read: if request.auth != null && 
+        (resource.data.status == 'approved' || 
+         request.auth.token.role == 'MODERATOR' || 
+         request.auth.token.role == 'ADMIN');
+      
+      // Solo usuarios autenticados pueden crear objetos culturales
+      allow create: if request.auth != null;
+      
+      // Solo el creador, moderadores y admins pueden actualizar
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.token.role == 'MODERATOR' || 
+         request.auth.token.role == 'ADMIN');
+      
+      // Solo moderadores y admins pueden eliminar
+      allow delete: if request.auth != null && 
+        (request.auth.token.role == 'MODERATOR' || 
+         request.auth.token.role == 'ADMIN');
+    }
+    
+    // ===== REGLAS PARA COMENTARIOS =====
+    match /comments/{commentId} {
+      // Todos los usuarios autenticados pueden leer comentarios
+      allow read: if request.auth != null;
+      
+      // Usuarios autenticados pueden crear comentarios
+      allow create: if request.auth != null;
+      
+      // Solo el autor puede actualizar o eliminar su comentario
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Moderadores y admins pueden eliminar cualquier comentario
+      allow delete: if request.auth != null && 
+        (request.auth.token.role == 'MODERATOR' || 
+         request.auth.token.role == 'ADMIN');
+    }
+    
+    // ===== REGLAS PARA REACCIONES =====
+    match /reactions/{reactionId} {
+      // Todos los usuarios autenticados pueden leer reacciones
+      allow read: if request.auth != null;
+      
+      // Usuarios autenticados pueden crear reacciones
+      allow create: if request.auth != null;
+      
+      // Solo el usuario que creó la reacción puede eliminarla
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ===== REGLAS PARA INTERACCIONES CON OBJETOS CULTURALES =====
+    match /cultural_object_interactions/{interactionId} {
+      // Todos los usuarios autenticados pueden leer interacciones
+      allow read: if request.auth != null;
+      
+      // Usuarios autenticados pueden crear interacciones
+      allow create: if request.auth != null;
+      
+      // Solo el usuario que creó la interacción puede actualizarla o eliminarla
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ===== REGLAS PARA INTERACCIONES SOCIALES =====
+    match /social_interactions/{interactionId} {
+      // Todos los usuarios autenticados pueden leer interacciones sociales
+      allow read: if request.auth != null;
+      
+      // Usuarios autenticados pueden crear interacciones sociales
+      allow create: if request.auth != null;
+      
+      // Solo el usuario que creó la interacción puede actualizarla o eliminarla
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ===== REGLAS PARA SESIONES DE USUARIO =====
+    match /user_sessions/{sessionId} {
+      // Usuarios pueden leer y escribir sus propias sesiones
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Admins pueden leer todas las sesiones para analytics
+      allow read: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS PARA ACCESO DE USUARIO =====
+    match /user_access/{accessId} {
+      // Usuarios pueden leer su propio acceso
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Usuarios pueden crear su propio acceso
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Solo admins pueden actualizar y eliminar acceso
+      allow update, delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS PARA EVENTOS DE ANALYTICS =====
+    match /analytics_events/{eventId} {
+      // Solo el sistema (backend) puede crear eventos de analytics
+      allow create: if request.auth != null;
+      
+      // Usuarios pueden leer sus propios eventos
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Admins pueden leer todos los eventos para analytics
+      allow read: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+      
+      // Solo admins pueden eliminar eventos
+      allow delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS PARA LOGS DE CONVERSACIÓN DE AVATARES =====
+    match /avatar_conversation_logs/{logId} {
+      // Usuarios pueden leer y escribir sus propios logs
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Admins pueden leer todos los logs
+      allow read: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS PARA AVATARES =====
+    match /avatars/{avatarId} {
+      // Todos los usuarios autenticados pueden leer avatares
+      allow read: if request.auth != null;
+      
+      // Solo admins pueden crear, actualizar y eliminar avatares
+      allow create, update, delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS PARA ZONAS DEL CAMPUS =====
+    match /campus_zones/{zoneId} {
+      // Todos los usuarios autenticados pueden leer zonas
+      allow read: if request.auth != null;
+      
+      // Solo admins, guías y agentes culturales pueden crear y actualizar zonas
+      allow create, update: if request.auth != null && 
+        (request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'GUIDE' ||
+         request.auth.token.role == 'AGENTE_CULTURAL');
+      
+      // Solo admins pueden eliminar zonas
+      allow delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS PARA COMENTARIOS DE COLABORADORES =====
+    match /collaborator_comments/{commentId} {
+      // Todos los usuarios autenticados pueden leer comentarios
+      allow read: if request.auth != null;
+      
+      // Usuarios autenticados pueden crear comentarios
+      allow create: if request.auth != null;
+      
+      // Solo el autor puede actualizar o eliminar su comentario
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Moderadores y admins pueden eliminar cualquier comentario
+      allow delete: if request.auth != null && 
+        (request.auth.token.role == 'MODERATOR' || 
+         request.auth.token.role == 'ADMIN');
+    }
+    
+    // ===== REGLAS PARA FOTOS AR =====
+    match /ar_photos/{photoId} {
+      // Todos los usuarios autenticados pueden leer fotos AR
+      allow read: if request.auth != null;
+      
+      // Usuarios autenticados pueden crear fotos AR
+      allow create: if request.auth != null;
+      
+      // Solo el autor puede actualizar o eliminar su foto
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ===== REGLAS PARA COLA DE MODERACIÓN =====
+    match /moderation_queue/{queueId} {
+      // Solo moderadores y admins pueden acceder a la cola de moderación
+      allow read, write: if request.auth != null && 
+        (request.auth.token.role == 'MODERATOR' || 
+         request.auth.token.role == 'ADMIN');
+    }
+    
+    // ===== REGLAS PARA MURALES =====
+    match /murals/{muralId} {
+      // Todos los usuarios autenticados pueden leer murales
+      allow read: if request.auth != null;
+      
+      // Solo admins, guías, artesanos y agentes culturales pueden crear murales
+      allow create: if request.auth != null && 
+        (request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'GUIDE' ||
+         request.auth.token.role == 'ARTISAN' ||
+         request.auth.token.role == 'AGENTE_CULTURAL');
+      
+      // Solo el creador, admins, guías, artesanos y agentes culturales pueden actualizar
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'GUIDE' ||
+         request.auth.token.role == 'ARTISAN' ||
+         request.auth.token.role == 'AGENTE_CULTURAL');
+      
+      // Solo admins pueden eliminar murales
+      allow delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+    
+    // ===== REGLAS POR DEFECTO =====
+    // Denegar acceso a cualquier otra colección no especificada
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

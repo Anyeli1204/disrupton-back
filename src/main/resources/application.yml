@@ -1,0 +1,60 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: kiri-engine-integration
+  
+  # Configuración para archivos multipart
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 500MB
+      file-size-threshold: 2KB
+
+# Configuración de KIRI Engine API
+kiri:
+  engine:
+    api:
+      key: ${KIRI_ENGINE_API_KEY:kiri_nEafHXmu9nBj6PTf_Zt8mFfWiTXb0EUU833AbR2Gz00}
+      base-url: ${KIRI_ENGINE_BASE_URL:https://api.kiriengine.app/api/v1}
+
+# Configuración de Firebase
+firebase:
+  project:
+    id: ${FIREBASE_PROJECT_ID:disrupton-new}
+    storage:
+      bucket: ${FIREBASE_STORAGE_BUCKET:disrupton-new.firebasestorage.app}
+  service:
+    account:
+      file: ${FIREBASE_SERVICE_ACCOUNT_FILE:firebase-service-account.json}
+
+# Configuración de Gemini API (ahora usando microservicio)
+gemini:
+  microservice:
+    url: ${GEMINI_MICROSERVICE_URL:http://localhost:5001}
+  # Configuración legacy (mantener para compatibilidad)
+  api:
+    key: ${GEMINI_API_KEY:AIzaSyBorNbtoPiAGrg9ZjYHKFyANvPG6x20ZRg}
+  apiUrl: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta}
+  model: ${GEMINI_MODEL:gemini-pro}
+  temperature: ${GEMINI_TEMPERATURE:0.7}
+  maxOutputTokens: ${GEMINI_MAX_TOKENS:1024}
+  timeoutMs: ${GEMINI_TIMEOUT:30000}
+
+# Configuración de JWT
+jwt:
+  secret: ${JWT_SECRET:disrupton-super-secret-key-2025-very-long-and-secure-for-hmac-sha256-algorithm}
+  expiration: ${JWT_EXPIRATION:86400000} # 24 horas en milisegundos
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 días en milisegundos
+
+# Configuración de logging
+logging:
+  level:
+    com.disrupton: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n" 
