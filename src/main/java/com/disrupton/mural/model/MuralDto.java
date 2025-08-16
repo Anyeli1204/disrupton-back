@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class Mural {
+public class MuralDto {
     private String id;
     private String pregunta;
     private List<String> imagenes; // URLs a imágenes de referencia

@@ -1,8 +1,11 @@
 package com.disrupton.config;
 
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @Service
@@ -19,35 +23,33 @@ public class CustomUserDetailsService implements UserDetailsService {
     private Firestore firestore;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
         try {
-            // Buscar usuario en Firebase por email o username
-            var query = firestore.collection("users")
-                    .whereEqualTo("email", username)
-                    .limit(1);
-            
-            var querySnapshot = query.get().get();
-            
-            if (!querySnapshot.isEmpty()) {
-                QueryDocumentSnapshot document = querySnapshot.getDocuments().get(0);
-                String userId = document.getId();
+            // ✅ Búsqueda correcta por ID de documento
+            DocumentSnapshot document = firestore.collection("users").document(userId).get().get();
+
+            if (document.exists()) {
+                String email = document.getString("email");
+                String role = document.getString("role"); // Obtener el rol
                 String password = document.getString("password");
-                
+
                 if (password == null) {
-                    password = "password"; // Contraseña por defecto
+                    password = "default-password"; // Una contraseña placeholder
                 }
-                
-                return User.builder()
-                        .username(userId) // Usar el userId como username
-                        .password(password)
-                        .authorities(new ArrayList<>())
-                        .build();
+
+                // ✅ Añadir el rol a las autoridades
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                if (role != null) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+                }
+
+                return new User(email, password, authorities); // Devolver UserDetails completo
             }
-            
-            throw new UsernameNotFoundException("Usuario no encontrado: " + username);
-            
+
+            throw new UsernameNotFoundException("Usuario no encontrado con ID: " + userId);
+
         } catch (InterruptedException | ExecutionException e) {
-            throw new UsernameNotFoundException("Error consultando usuario: " + username, e);
+            throw new UsernameNotFoundException("Error consultando usuario con ID: " + userId, e);
         }
     }
 }

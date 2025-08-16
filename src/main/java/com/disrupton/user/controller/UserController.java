@@ -62,7 +62,7 @@ public class UserController {
     public ResponseEntity<UserDto> createUser(@RequestBody UserRequest request) {
         try {
             log.info("Creating new user: {}", request.getEmail());
-            UserDto createdUser = userService.createUser(request);
+            UserDto createdUser = userService.createUser(request, null);
             return ResponseEntity.ok(createdUser);
         } catch (Exception e) {
             log.error("Error creating user: {}", e.getMessage(), e);

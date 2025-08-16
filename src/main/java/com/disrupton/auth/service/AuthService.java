@@ -50,7 +50,7 @@ public class AuthService {
             }
 
             UserRecord userRecord = FirebaseAuth.getInstance().createUser(createRequest);
-            
+            String authUserId = userRecord.getUid();
             // Crear token personalizado
             String customToken = FirebaseAuth.getInstance().createCustomToken(userRecord.getUid());
             
@@ -74,7 +74,7 @@ public class AuthService {
             userRequest.setName(userRecord.getDisplayName());
             userRequest.setRole("USER");
             
-            userService.createUser(userRequest);
+            userService.createUser(userRequest, authUserId);
             
             log.info("✅ Usuario registrado exitosamente: {}", userRecord.getUid());
             

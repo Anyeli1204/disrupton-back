@@ -1,8 +1,11 @@
 package com.disrupton.mural.controller;
 
+import com.disrupton.auth.annotation.RequireRole;
+import com.disrupton.auth.enums.UserRole;
 import com.disrupton.comment.dto.CommentDto;
 import com.disrupton.moderation.ModerationService;
-import com.disrupton.mural.model.Mural;
+import com.disrupton.mural.model.MuralDto;
+import com.disrupton.mural.model.MuralQuestion;
 import com.disrupton.mural.service.MuralService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/mural")
@@ -24,6 +28,7 @@ public class CommentMuralController {
 
 
     @PostMapping("/")
+    @RequireRole({UserRole.ADMIN, UserRole.MODERATOR})
     public ResponseEntity<Map<String, Object>> crearPregunta(@RequestBody Map<String, Object> request) {
         Map<String, Object> response = new HashMap<>();
         try {
@@ -35,21 +40,34 @@ public class CommentMuralController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            Mural nuevaPregunta = muralService.crearPregunta(pregunta, imagenes);
+            // 👇 Por defecto dura 15 días
+            MuralDto nuevaPregunta = muralService.crearPregunta(pregunta, imagenes, 15);
+
             response.put("mensaje", "✅ Pregunta del mural creada.");
             response.put("id", nuevaPregunta.getId());
             response.put("pregunta", nuevaPregunta.getPregunta());
             response.put("imagenes", nuevaPregunta.getImagenes());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("error", "❌ No se pudo crear la pregunta del mural.");
             response.put("detalle", e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
+    }
 
-        return ResponseEntity.ok(response);
+
+    @GetMapping("/active")
+    public ResponseEntity<MuralQuestion> getActiveQuestion() throws ExecutionException, InterruptedException {
+        MuralQuestion active = muralService.getActiveQuestion();
+        if (active == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(active);
     }
 
     @GetMapping("/comentarios/{preguntaId}")
+    @RequireRole(UserRole.USER) // <-- Si todos los usuarios logueados pueden ver
     public ResponseEntity<List<CommentDto>> listarComentariosPorPregunta(@PathVariable String preguntaId) throws Exception {
         List<CommentDto> comentarios = muralService.getCommentsByPreguntaId(preguntaId);
         return ResponseEntity.ok(comentarios);
@@ -57,6 +75,7 @@ public class CommentMuralController {
 
 
     @PostMapping("/comentarios")
+    @RequireRole(UserRole.USER) // <-- Si todos los usuarios logueados pueden ver
     public ResponseEntity<?> comentarMural(@RequestBody CommentDto request) {
         String comentario = request.getText();
         String preguntaId = request.getPreguntaId();
@@ -94,6 +113,7 @@ public class CommentMuralController {
     }
 
     @DeleteMapping("/{preguntaId}")
+    @RequireRole({UserRole.ADMIN, UserRole.USER})
     public ResponseEntity<Map<String, Object>> eliminarComentario(
             @PathVariable String preguntaId,
             @RequestParam String commentId,

@@ -24,8 +24,7 @@ public class CollaboratorDto {
     private String email;
     private String role; 
     private Timestamp createdAt;
-
-    private String descripcion; 
+    private String descripcion;
     private Double calificacion; 
     private List<String> imagenesGaleria; 
     private List<CommentCollabResponseDto> comentariosDestacados; 

@@ -1,8 +1,8 @@
 package com.disrupton.collaborator.controller;
 
-import com.disrupton.collaborator.dto.CollaboratorDto;
-import com.disrupton.collaborator.dto.CommentCollabRequestDto;
-import com.disrupton.collaborator.dto.CommentCollabResponseDto;
+import com.disrupton.auth.annotation.RequireRole;
+import com.disrupton.auth.enums.UserRole;
+import com.disrupton.collaborator.dto.*;
 import com.disrupton.collaborator.service.CollaboratorService;
 import com.disrupton.exception.ModerationRejectedException;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ public class CollaboratorController {
      * POST /api/collaborators - Crear un colaborador o agente cultural
      */
     @PostMapping
+    @RequireRole({UserRole.ADMIN})
     public ResponseEntity<CollaboratorDto> createCollaborator(@RequestBody CollaboratorDto dto) {
         CollaboratorDto saved = collaboratorService.createCollaborator(dto);
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
@@ -38,6 +40,7 @@ public class CollaboratorController {
      * GET /api/collaborators - Listado de agentes culturales con filtros
      */
     @GetMapping
+    @RequireRole({UserRole.ADMIN, UserRole.USER})
     public ResponseEntity<Page<CollaboratorDto>> getCollaborators(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String tipo,
@@ -58,6 +61,7 @@ public class CollaboratorController {
      * GET /api/collaborators/{id} - Obtener detalle de agente cultural
      */
     @GetMapping("/{id}")
+    @RequireRole({UserRole.ADMIN, UserRole.USER})
     public ResponseEntity<CollaboratorDto> getCollaboratorDetail(
             @PathVariable String id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -73,39 +77,36 @@ public class CollaboratorController {
 
     /**
      * POST /api/collaborators/{id}/unlock - Desbloquear redes de contacto
+     * Requiere autenticación.
      */
     @PostMapping("/{id}/unlock")
-    public ResponseEntity<Map<String, Object>> unlockCollaborator(
-            @PathVariable String id,
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody(required = false) Map<String, Object> paymentData) {
-
-        String userId;
-        
-        if (userDetails != null) {
-            // Si hay autenticación, usar el usuario autenticado
-            userId = userDetails.getUsername();
-            log.info("Usuario autenticado {} intentando desbloquear redes de contacto del agente {}", userId, id);
-        } else if (paymentData != null && paymentData.containsKey("userId")) {
-            // Si no hay autenticación pero hay userId en el body (para pruebas)
-            userId = paymentData.get("userId").toString();
-            log.info("Usuario no autenticado {} intentando desbloquear redes de contacto del agente {} (MODO PRUEBA)", userId, id);
-        } else {
-            log.warn("Intento de desbloqueo sin autenticación ni userId para agente {}", id);
-            return ResponseEntity.status(401)
-                    .body(Map.of("error", "Usuario no autenticado o falta userId en el body"));
+    @RequireRole({UserRole.ADMIN, UserRole.USER})
+    public ResponseEntity<?> unlockCollaborator(
+            @PathVariable String id, @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UnlockRequestDto requestDto) {
+        // 1. Seguridad obligatoria: se elimina el modo de prueba
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Autenticación requerida para esta operación"));
         }
 
-        Map<String, Object> result = collaboratorService.unlockCollaborator(id, userId, paymentData);
+        String userId = userDetails.getUsername();
+        log.info("Usuario autenticado {} intentando desbloquear al agente {}", userId, id);
 
-        if (result.containsKey("error")) {
-            return ResponseEntity.badRequest().body(result);
+        try {
+            // 4. El servicio ahora puede devolver un DTO o lanzar una excepción
+            UnlockResponseDto result = collaboratorService.unlockCollaborator(id, userId, requestDto);
+            return ResponseEntity.ok(result); // 3. Devolver un DTO de respuesta
+
+        } catch (IllegalStateException e) {
+            // 4. Capturar excepciones de negocio específicas del servicio
+            log.warn("Intento de desbloqueo fallido para el usuario {}: {}", userId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-
-        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/{id}/comments")
+    @RequireRole({UserRole.ADMIN, UserRole.USER})
     public ResponseEntity<?> addCommentToCollaborator(
             @PathVariable String id,
             @RequestBody CommentCollabRequestDto request) {
@@ -144,8 +145,8 @@ public class CollaboratorController {
     }
 
 
-
     @DeleteMapping("/{id}")
+    @RequireRole({UserRole.ADMIN})
     public ResponseEntity<?> deleteCollaborator(@PathVariable String id) {
         collaboratorService.deleteCollaborator(id);
         return ResponseEntity.ok(Map.of("message", "Colaborador eliminado correctamente"));

@@ -30,34 +30,39 @@ public class UserService {
      */
     public UserDto saveUser(UserDto user) throws ExecutionException, InterruptedException {
         log.info("💾 Guardando usuario: {}", user.getEmail());
-        
-        // Establecer timestamp de creación si no existe
+        DocumentReference docRef;
+        // 1. Validar que el ID no sea nulo antes de usarlo.
+        if (user.getUserId() == null || user.getUserId().isBlank()) {
+            docRef = firestore.collection(COLLECTION_NAME).document();
+            user.setUserId(docRef.getId()); // Asigna el nuevo ID al objeto.
+            log.info("Generado nuevo ID para usuario: {}", user.getUserId());
+        } else {
+            // Si ya tiene un ID (del registro), lo usa.
+            docRef = firestore.collection(COLLECTION_NAME).document(user.getUserId());
+        }
+
         if (user.getCreatedAt() == null) {
             user.setCreatedAt(Timestamp.now());
         }
-        
-        // Crear documento con ID automático de Firestore
-        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document();
-        String userId = docRef.getId();
-        
-        // Asignar el ID generado al usuario
-        user.setUserId(userId);
-        
+// 2. Asegurarse de actualizar siempre el timestamp de modificación.
+        user.setUpdatedAt(Timestamp.now());
+
         ApiFuture<WriteResult> future = docRef.set(user);
         WriteResult result = future.get();
-        
-        log.info("✅ Usuario guardado exitosamente con ID: {}. Timestamp: {}", userId, result.getUpdateTime());
+
+        log.info("✅ Usuario guardado exitosamente con ID: {}. Timestamp: {}", user.getUserId(), result.getUpdateTime());
         return user;
     }
 
     /**
      * Crea un nuevo usuario desde UserRequest
      */
-    public UserDto createUser(UserRequest request) throws ExecutionException, InterruptedException {
+    public UserDto createUser(UserRequest request, String UserId) throws ExecutionException, InterruptedException {
         log.info("👤 Creando nuevo usuario: {}", request.getEmail());
         
         UserDto user = new UserDto();
         user.setEmail(request.getEmail());
+        user.setUserId(UserId);
         user.setName(request.getName());
         user.setRole(request.getRole());
         user.setProfileImageUrl(request.getProfileImageUrl());

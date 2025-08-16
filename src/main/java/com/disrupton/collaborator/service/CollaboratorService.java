@@ -1,8 +1,6 @@
 package com.disrupton.collaborator.service;
 
-import com.disrupton.collaborator.dto.CollaboratorDto;
-import com.disrupton.collaborator.dto.CommentCollabRequestDto;
-import com.disrupton.collaborator.dto.CommentCollabResponseDto;
+import com.disrupton.collaborator.dto.*;
 import com.disrupton.exception.ModerationRejectedException;
 import com.disrupton.moderation.ModerationService;
 import com.disrupton.user.dto.UserDto;
@@ -164,73 +162,83 @@ public class CollaboratorService {
     /**
      * Desbloquear redes de contacto de agente cultural mediante pago (simulado)
      */
-    public Map<String, Object> unlockCollaborator(String agentId, String userId, Map<String, Object> paymentData) {
+    public UnlockResponseDto unlockCollaborator(String agentId, String userId, UnlockRequestDto requestDto) {
         try {
-            // Verificar que el agente cultural existe
-            DocumentSnapshot agentDoc = firestore.collection(COLLABORATORS_COLLECTION)
-                    .document(agentId)
-                    .get().get();
+            // 1. Usar una transacción para asegurar que todas las escrituras se completen o ninguna lo haga.
+            return firestore.runTransaction(transaction -> {
+                DocumentReference agentRef = firestore.collection(COLLABORATORS_COLLECTION).document(agentId);
+                DocumentSnapshot agentDoc = transaction.get(agentRef).get();
 
-            if (!agentDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(agentDoc.getString("role"))) {
-                return Map.of("error", "Colaborador no encontrado");
+                // 2. Usar "Guard Clauses" para validar y fallar rápido.
+                if (!agentDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(agentDoc.getString("role"))) {
+                    throw new IllegalArgumentException("Colaborador no encontrado o rol inválido.");
+                }
+
+                if (hasAccess(agentId, userId)) {
+                    throw new IllegalStateException("Ya tienes acceso a las redes de contacto de este agente.");
+                }
+
+                // 3. Lógica de negocio más limpia.
+                double accessPrice = Optional.ofNullable(agentDoc.getDouble("precioAcceso")).orElse(1.0);
+                String paymentId = "pay_" + UUID.randomUUID().toString().substring(0, 8);
+                Timestamp now = Timestamp.now();
+
+                // Registrar el pago
+                DocumentReference paymentRef = firestore.collection(PAYMENTS_COLLECTION).document(paymentId);
+                Map<String, Object> paymentRecord = createPaymentRecord(paymentId, userId, agentId, accessPrice, now);
+                transaction.set(paymentRef, paymentRecord);
+
+                // Registrar el acceso del usuario
+                String accessId = userId + "_" + agentId;
+                DocumentReference accessRef = firestore.collection(USER_ACCESS_COLLECTION).document(accessId);
+                Map<String, Object> accessRecord = createAccessRecord(accessId, userId, agentId, paymentId, now);
+                transaction.set(accessRef, accessRecord);
+
+                log.info("Usuario {} desbloqueó al agente {} con pago {}", userId, agentId, paymentId);
+
+                // 4. Devolver un DTO de respuesta en lugar de un Map.
+                return new UnlockResponseDto(
+                        true,
+                        "Redes de contacto desbloqueadas exitosamente.",
+                        paymentId,
+                        true
+                );
+            }).get();
+
+        } catch (Exception e) {
+            // 5. Envolver excepciones específicas de Firestore en una excepción de runtime.
+            log.error("Error en la transacción de desbloqueo para el agente {}: {}", agentId, e.getMessage(), e);
+            // Si la excepción es una de nuestras excepciones de negocio, la volvemos a lanzar.
+            if (e.getCause() instanceof IllegalArgumentException || e.getCause() instanceof IllegalStateException) {
+                throw (RuntimeException) e.getCause();
             }
-
-            // Verificar si ya tiene acceso
-            if (hasAccess(agentId, userId)) {
-                return Map.of("error", "Ya tienes acceso a las redes de contacto de este agente");
-            }
-
-            // Obtener precio de acceso (por defecto 1 soles)
-            Double precioAcceso = agentDoc.getDouble("precioAcceso");
-            if (precioAcceso == null) {
-                precioAcceso = 1.0;
-            }
-
-            // Simular procesamiento de pago
-            String paymentId = "pay_" + UUID.randomUUID().toString().substring(0, 8);
-            Timestamp now = Timestamp.now();
-
-            // Registrar el pago
-            Map<String, Object> paymentRecord = Map.of(
-                    "id", paymentId,
-                    "userId", userId,
-                    "agentId", agentId,
-                    "amount", precioAcceso,
-                    "currency", "PEN",
-                    "status", "completed",
-                    "timestamp", now
-            );
-
-            firestore.collection(PAYMENTS_COLLECTION).document(paymentId).set(paymentRecord);
-
-            // Registrar el acceso del usuario
-            String accessId = userId + "_" + agentId;
-            Map<String, Object> accessRecord = Map.of(
-                    "id", accessId,
-                    "userId", userId,
-                    "agentId", agentId,
-                    "grantedAt", now,
-                    "paymentId", paymentId,
-                    "accessType", "contact_networks"
-            );
-
-            firestore.collection(USER_ACCESS_COLLECTION).document(accessId).set(accessRecord);
-
-            log.info("Usuario {} desbloqueó redes de contacto del agente {} con pago {}", userId, agentId, paymentId);
-
-            return Map.of(
-                    "success", true,
-                    "message", "Redes de contacto desbloqueadas exitosamente",
-                    "paymentId", paymentId,
-                    "accessGranted", true
-            );
-
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("Error desbloqueando agente {}: {}", agentId, e.getMessage(), e);
-            return Map.of("error", "Error procesando el desbloqueo");
+            throw new RuntimeException("Error procesando el desbloqueo. Inténtalo de nuevo.", e);
         }
     }
 
+    // 6. Métodos de ayuda para crear los registros, mejorando la legibilidad.
+    private Map<String, Object> createPaymentRecord(String paymentId, String userId, String agentId, double amount, Timestamp timestamp) {
+        return Map.of(
+                "id", paymentId,
+                "userId", userId,
+                "agentId", agentId,
+                "amount", amount,
+                "currency", "PEN",
+                "status", "completed",
+                "timestamp", timestamp
+        );
+    }
+
+    private Map<String, Object> createAccessRecord(String accessId, String userId, String agentId, String paymentId, Timestamp timestamp) {
+        return Map.of(
+                "id", accessId,
+                "userId", userId,
+                "agentId", agentId,
+                "grantedAt", timestamp,
+                "paymentId", paymentId,
+                "accessType", "contact_networks"
+        );
+    }
     public void deleteCollaborator(String collaboratorId) {
         try {
             DocumentReference docRef = firestore.collection(COLLABORATORS_COLLECTION).document(collaboratorId);
@@ -280,9 +288,14 @@ public class CollaboratorService {
             // Verificar colaborador válido
             DocumentSnapshot collaboratorSnapshot = firestore.collection(COLLABORATORS_COLLECTION)
                     .document(collaboratorId).get().get();
-            if (!collaboratorSnapshot.exists() ||
-                    !"AGENTE_CULTURAL".equals(collaboratorSnapshot.getString("role"))) {
-                throw new IllegalArgumentException("Agente cultural no encontrado");
+
+            if (!collaboratorSnapshot.exists()) {
+                throw new IllegalArgumentException("Colaborador no encontrado en la base de datos");
+            }
+
+            String role = collaboratorSnapshot.getString("role");
+            if (role == null || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(role)) {
+                throw new IllegalArgumentException("Rol no válido para comentarios: " + role);
             }
 
             // Obtener nombre del usuario
