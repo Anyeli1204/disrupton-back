@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class MuralQuestion {
     private String id;
+    @PropertyName("pregunta")
     private String content;
 
     @PropertyName("startDate")
@@ -24,6 +25,14 @@ public class MuralQuestion {
     private boolean isActive;
 
     private List<String> imagenes; // URLs a imágenes de referencia
+
+
+    // Campos adicionales para fechas legibles
+    @PropertyName("fechaCreacionStr")
+    private String fechaCreacionStr;
+
+    @PropertyName("fechaExpiracionStr")
+    private String fechaExpiracionStr;
 
     public boolean isCurrentlyActive() {
         Timestamp now = Timestamp.now();

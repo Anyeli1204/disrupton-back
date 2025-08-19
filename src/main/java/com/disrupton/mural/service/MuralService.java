@@ -76,6 +76,11 @@ public class MuralService {
             DocumentSnapshot doc = querySnapshot.get().getDocuments().get(0);
             MuralQuestion q = doc.toObject(MuralQuestion.class);
             if (q != null) {
+                q.setId(doc.getId()); // ← Asignar el ID del documento
+                // Mapear manualmente el campo pregunta a content
+                if (doc.contains("pregunta")) {
+                    q.setContent((String) doc.get("pregunta"));
+                }
                 q.setActive(q.isCurrentlyActive());
             }
             return q;

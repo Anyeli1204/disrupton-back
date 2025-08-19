@@ -28,7 +28,7 @@ public class CommentMuralController {
 
 
     @PostMapping("/")
-    @RequireRole({UserRole.ADMIN, UserRole.MODERATOR})
+    @RequireRole({UserRole.ADMIN, UserRole.MODERATOR, UserRole.USER})
     public ResponseEntity<Map<String, Object>> crearPregunta(@RequestBody Map<String, Object> request) {
         Map<String, Object> response = new HashMap<>();
         try {
@@ -96,7 +96,8 @@ public class CommentMuralController {
             response.put("aprobado", esSeguro);
 
             if (esSeguro) {
-                muralService.saveCommentToMural(request);
+                CommentDto savedComment = muralService.saveCommentToMural(request);
+                response.put("commentData", savedComment);
                 response.put("mensaje", "✅ Comentario para mural aprobado y guardado.");
             } else {
                 response.put("rechazado", true);
