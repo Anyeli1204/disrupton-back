@@ -16,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -75,6 +76,37 @@ public class CollaboratorController {
         return ResponseEntity.ok(collaborator);
     }
 
+    /**
+     * PUT /api/collaborators/{id} - Actualizar campos de un colaborador
+     */
+    @PutMapping("/{id}")
+    @RequireRole({UserRole.ADMIN})
+    public ResponseEntity<?> updateCollaborator(
+            @PathVariable String id,
+            @RequestBody CollaboratorDto updateDto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        log.info("Usuario {} actualizando colaborador {}",
+                userDetails != null ? userDetails.getUsername() : "anónimo", id);
+
+        try {
+            CollaboratorDto updatedCollaborator = collaboratorService.updateCollaborator(id, updateDto);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "mensaje", "Colaborador actualizado exitosamente",
+                    "colaborador", updatedCollaborator
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Error actualizando colaborador {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "Error interno al actualizar colaborador"
+            ));
+        }
+    }
     /**
      * POST /api/collaborators/{id}/unlock - Desbloquear redes de contacto
      * Requiere autenticación.
@@ -144,6 +176,28 @@ public class CollaboratorController {
         }
     }
 
+    /**
+     * GET /api/collaborators/{id}/comments - Obtener comentarios de un colaborador
+     */
+    @GetMapping("/{id}/comments")
+    @RequireRole({UserRole.ADMIN, UserRole.USER})
+    public ResponseEntity<List<CommentCollabResponseDto>> getCollaboratorComments(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        log.info("Usuario {} solicitando comentarios del colaborador {}",
+                userDetails != null ? userDetails.getUsername() : "anónimo", id);
+
+        try {
+            List<CommentCollabResponseDto> comments = collaboratorService.getCollaboratorComments(id);
+            return ResponseEntity.ok(comments);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            log.error("Error obteniendo comentarios del colaborador {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(500).body(null);
+        }
+    }
 
     @DeleteMapping("/{id}")
     @RequireRole({UserRole.ADMIN})

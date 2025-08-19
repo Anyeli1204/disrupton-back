@@ -22,27 +22,29 @@ public class CollaboratorDto {
     private String id;
     private String name;
     private String email;
-    private String role; 
+    private String role;
+    private String region; // Nueva región del colaborador
     private Timestamp createdAt;
     private String descripcion;
-    private Double calificacion; 
-    private List<String> imagenesGaleria; 
-    private List<CommentCollabResponseDto> comentariosDestacados; 
+    private Double calificacion;
+    private Integer numeroResenas; // Número total de reseñas
+    private List<String> imagenesGaleria;
 
-    private Map<String, String> redesContacto; 
-    private Boolean tieneAcceso; 
-    private Double precioAcceso; 
+    private Map<String, String> redesContacto;
+    private Boolean tieneAcceso;
+    private Double precioAcceso;
 
     public static CollaboratorDto createPublicView(CollaboratorDto full) {
         return CollaboratorDto.builder()
                 .id(full.getId())
                 .name(full.getName())
                 .role(full.getRole())
+                .region(full.getRegion())
                 .createdAt(full.getCreatedAt())
                 .descripcion(full.getDescripcion())
                 .calificacion(full.getCalificacion())
+                .numeroResenas(full.getNumeroResenas())
                 .imagenesGaleria(full.getImagenesGaleria())
-                .comentariosDestacados(full.getComentariosDestacados())
                 .precioAcceso(full.getPrecioAcceso())
                 .tieneAcceso(false)
                 .build();

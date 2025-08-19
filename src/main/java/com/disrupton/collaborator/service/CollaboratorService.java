@@ -27,6 +27,7 @@ public class CollaboratorService {
     private static final String COLLABORATORS_COLLECTION = "collaborators";
     private static final String USER_ACCESS_COLLECTION = "user_access";
     private static final String PAYMENTS_COLLECTION = "payments";
+    private static final String COLLABORATOR_COMMENTS_COLLECTION = "collaborator_comments";
 
     private final ModerationService moderationService;
 
@@ -41,10 +42,13 @@ public class CollaboratorService {
             data.put("name", dto.getName());
             data.put("email", dto.getEmail());
             data.put("role", dto.getRole());
+            data.put("region", dto.getRegion());
             data.put("descripcion", dto.getDescripcion());
             data.put("imagenesGaleria", dto.getImagenesGaleria());
             data.put("redesContacto", dto.getRedesContacto());
             data.put("precioAcceso", dto.getPrecioAcceso() != null ? dto.getPrecioAcceso() : 10.0);
+            data.put("calificacion", 0.0);
+            data.put("numeroResenas", 0);
             data.put("createdAt", Timestamp.now());
 
             firestore.collection(COLLABORATORS_COLLECTION).document(newId).set(data).get();
@@ -87,8 +91,8 @@ public class CollaboratorService {
             List<CollaboratorDto> all = documents.stream()
                     .map(this::documentToDTO)
                     .filter(collab -> {
-                        // Filtrar por rol (GUIDE, ARTISAN, AGENTE_CULTURAL)
-                        if (collab.getRole() == null || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(collab.getRole())) {
+                        // Filtrar por rol (solo GUIDE y ARTISAN)
+                        if (collab.getRole() == null || !Arrays.asList("GUIDE", "ARTISAN").contains(collab.getRole())) {
                             return false;
                         }
                         // Filtrar por nombre si se especifica
@@ -133,7 +137,7 @@ public class CollaboratorService {
                     .document(userId)
                     .get().get();
 
-            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(doc.getString("role"))) {
+            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(doc.getString("role"))) {
                 throw new IllegalArgumentException("Colaborador no encontrado");
             }
 
@@ -160,6 +164,78 @@ public class CollaboratorService {
     }
 
     /**
+     * Actualizar campos de un colaborador existente
+     */
+    public CollaboratorDto updateCollaborator(String collaboratorId, CollaboratorDto updateDto) {
+        try {
+            // Verificar que el colaborador existe
+            DocumentReference docRef = firestore.collection(COLLABORATORS_COLLECTION).document(collaboratorId);
+            DocumentSnapshot snapshot = docRef.get().get();
+
+            if (!snapshot.exists()) {
+                throw new IllegalArgumentException("El colaborador no existe");
+            }
+
+            String currentRole = snapshot.getString("role");
+            if (!Arrays.asList("GUIDE", "ARTISAN").contains(currentRole)) {
+                throw new IllegalArgumentException("El colaborador no tiene un rol válido");
+            }
+
+            // Preparar datos para actualizar (solo campos no nulos)
+            Map<String, Object> updates = new HashMap<>();
+
+            if (updateDto.getName() != null && !updateDto.getName().trim().isEmpty()) {
+                updates.put("name", updateDto.getName().trim());
+            }
+
+            if (updateDto.getEmail() != null && !updateDto.getEmail().trim().isEmpty()) {
+                updates.put("email", updateDto.getEmail().trim());
+            }
+
+            if (updateDto.getRole() != null && Arrays.asList("GUIDE", "ARTISAN").contains(updateDto.getRole())) {
+                updates.put("role", updateDto.getRole());
+            }
+
+            if (updateDto.getRegion() != null && !updateDto.getRegion().trim().isEmpty()) {
+                updates.put("region", updateDto.getRegion().trim());
+            }
+
+            if (updateDto.getDescripcion() != null && !updateDto.getDescripcion().trim().isEmpty()) {
+                updates.put("descripcion", updateDto.getDescripcion().trim());
+            }
+
+            if (updateDto.getImagenesGaleria() != null) {
+                updates.put("imagenesGaleria", updateDto.getImagenesGaleria());
+            }
+
+            if (updateDto.getRedesContacto() != null) {
+                updates.put("redesContacto", updateDto.getRedesContacto());
+            }
+
+            if (updateDto.getPrecioAcceso() != null && updateDto.getPrecioAcceso() > 0) {
+                updates.put("precioAcceso", updateDto.getPrecioAcceso());
+            }
+
+            // Solo actualizar si hay cambios
+            if (updates.isEmpty()) {
+                throw new IllegalArgumentException("No se proporcionaron campos válidos para actualizar");
+            }
+
+            // Actualizar documento en Firestore
+            docRef.update(updates).get();
+
+            log.info("Colaborador {} actualizado con campos: {}", collaboratorId, updates.keySet());
+
+            // Obtener y retornar el colaborador actualizado
+            DocumentSnapshot updatedSnapshot = docRef.get().get();
+            return documentToDTO(updatedSnapshot);
+
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error actualizando colaborador {}: {}", collaboratorId, e.getMessage(), e);
+            throw new RuntimeException("Error al actualizar colaborador", e);
+        }
+    }
+    /**
      * Desbloquear redes de contacto de agente cultural mediante pago (simulado)
      */
     public UnlockResponseDto unlockCollaborator(String agentId, String userId, UnlockRequestDto requestDto) {
@@ -170,7 +246,7 @@ public class CollaboratorService {
                 DocumentSnapshot agentDoc = transaction.get(agentRef).get();
 
                 // 2. Usar "Guard Clauses" para validar y fallar rápido.
-                if (!agentDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(agentDoc.getString("role"))) {
+                if (!agentDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(agentDoc.getString("role"))) {
                     throw new IllegalArgumentException("Colaborador no encontrado o rol inválido.");
                 }
 
@@ -249,8 +325,8 @@ public class CollaboratorService {
             }
 
             String role = snapshot.getString("role");
-            if (!"AGENTE_CULTURAL".equals(role)) {
-                throw new IllegalArgumentException("El usuario no es un agente cultural");
+            if (!Arrays.asList("GUIDE", "ARTISAN").contains(role)) {
+                throw new IllegalArgumentException("El usuario no es un colaborador válido");
             }
 
             docRef.delete().get();
@@ -294,7 +370,7 @@ public class CollaboratorService {
             }
 
             String role = collaboratorSnapshot.getString("role");
-            if (role == null || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(role)) {
+            if (role == null || !Arrays.asList("GUIDE", "ARTISAN").contains(role)) {
                 throw new IllegalArgumentException("Rol no válido para comentarios: " + role);
             }
 
@@ -318,7 +394,10 @@ public class CollaboratorService {
                     "createdAt", now
             );
 
-            firestore.collection("collaborator_comments").document(commentId).set(commentData).get();
+            firestore.collection(COLLABORATOR_COMMENTS_COLLECTION).document(commentId).set(commentData).get();
+
+            // Actualizar calificación promedio del colaborador
+            updateCollaboratorRating(collaboratorId);
 
             return CommentCollabResponseDto.builder()
                     .id(commentId)
@@ -335,6 +414,84 @@ public class CollaboratorService {
             throw new RuntimeException("No se pudo guardar el comentario", e);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Obtener comentarios de un colaborador
+     */
+    public List<CommentCollabResponseDto> getCollaboratorComments(String collaboratorId) {
+        try {
+            // Verificar que el colaborador existe
+            DocumentSnapshot collaboratorDoc = firestore.collection(COLLABORATORS_COLLECTION)
+                    .document(collaboratorId).get().get();
+
+            if (!collaboratorDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(collaboratorDoc.getString("role"))) {
+                throw new IllegalArgumentException("Colaborador no encontrado");
+            }
+
+            // Obtener comentarios ordenados por fecha (más recientes primero)
+            Query commentsQuery = firestore.collection(COLLABORATOR_COMMENTS_COLLECTION)
+                    .whereEqualTo("culturalAgentId", collaboratorId)
+                    .orderBy("fecha", Query.Direction.DESCENDING);
+
+            List<QueryDocumentSnapshot> commentDocs = commentsQuery.get().get().getDocuments();
+
+            return commentDocs.stream()
+                    .map(doc -> CommentCollabResponseDto.builder()
+                            .id(doc.getString("id"))
+                            .culturalAgentId(doc.getString("culturalAgentId"))
+                            .authorUserId(doc.getString("authorUserId"))
+                            .usuarioNombre(doc.getString("usuarioNombre"))
+                            .comentario(doc.getString("comentario"))
+                            .calificacion(doc.getDouble("calificacion"))
+                            .fecha(doc.getTimestamp("fecha"))
+                            .build())
+                    .collect(Collectors.toList());
+
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error obteniendo comentarios del colaborador {}: {}", collaboratorId, e.getMessage(), e);
+            throw new RuntimeException("Error al obtener comentarios", e);
+        }
+    }
+
+    /**
+     * Actualizar calificación promedio del colaborador basado en comentarios
+     */
+    private void updateCollaboratorRating(String collaboratorId) {
+        try {
+            // Obtener todos los comentarios del colaborador
+            Query commentsQuery = firestore.collection(COLLABORATOR_COMMENTS_COLLECTION)
+                    .whereEqualTo("culturalAgentId", collaboratorId);
+
+            List<QueryDocumentSnapshot> commentDocs = commentsQuery.get().get().getDocuments();
+
+            if (commentDocs.isEmpty()) {
+                return; // No hay comentarios, mantener calificación actual
+            }
+
+            // Calcular promedio
+            double totalRating = commentDocs.stream()
+                    .mapToDouble(doc -> Optional.ofNullable(doc.getDouble("calificacion")).orElse(0.0))
+                    .sum();
+
+            double averageRating = totalRating / commentDocs.size();
+            int numberOfReviews = commentDocs.size();
+
+            // Actualizar colaborador
+            DocumentReference collaboratorRef = firestore.collection(COLLABORATORS_COLLECTION).document(collaboratorId);
+            Map<String, Object> updates = Map.of(
+                    "calificacion", Math.round(averageRating * 10.0) / 10.0, // Redondear a 1 decimal
+                    "numeroResenas", numberOfReviews
+            );
+
+            collaboratorRef.update(updates).get();
+            log.info("Calificación actualizada para colaborador {}: {} ({} reseñas)",
+                    collaboratorId, averageRating, numberOfReviews);
+
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error actualizando calificación del colaborador {}: {}", collaboratorId, e.getMessage(), e);
+            // No lanzar excepción para no interrumpir el flujo principal
         }
     }
 
@@ -371,7 +528,7 @@ public class CollaboratorService {
                     .document(agentId)
                     .get().get();
 
-            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(doc.getString("role"))) {
+            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(doc.getString("role"))) {
                 throw new IllegalArgumentException("Colaborador no encontrado");
             }
 
@@ -452,34 +609,17 @@ public class CollaboratorService {
      * Convertir documento de Firebase a DTO
      */
     private CollaboratorDto documentToDTO(DocumentSnapshot doc) {
-        // Obtener comentarios destacados (simulados por ahora)
-        List<CommentCollabResponseDto> comentarios = List.of(
-                CommentCollabResponseDto.builder()
-                        .id("com1")
-                        .usuarioNombre("Ana García")
-                        .comentario("Excelente guía, muy conocedor de la cultura inca")
-                        .calificacion(5.0)
-                        .fecha(Timestamp.now())
-                        .build(),
-                CommentCollabResponseDto.builder()
-                        .id("com2")
-                        .usuarioNombre("Carlos Mendoza")
-                        .comentario("Una experiencia única, recomendado 100%")
-                        .calificacion(4.8)
-                        .fecha(Timestamp.now())
-                        .build()
-        );
-
         return CollaboratorDto.builder()
                 .id(doc.getId())
                 .name(doc.getString("name"))
                 .email(doc.getString("email"))
                 .role(doc.getString("role"))
+                .region(doc.getString("region"))
                 .createdAt(doc.getTimestamp("createdAt"))
                 .descripcion(doc.getString("descripcion"))
-                .calificacion(doc.getDouble("calificacion"))
+                .calificacion(doc.getDouble("calificacion") != null ? doc.getDouble("calificacion") : 0.0)
+                .numeroResenas(doc.getLong("numeroResenas") != null ? doc.getLong("numeroResenas").intValue() : 0)
                 .imagenesGaleria((List<String>) doc.get("imagenesGaleria"))
-                .comentariosDestacados(comentarios)
                 .redesContacto((Map<String, String>) doc.get("redesContacto"))
                 .precioAcceso(doc.getDouble("precioAcceso") != null ? doc.getDouble("precioAcceso") : 10.0)
                 .build();
