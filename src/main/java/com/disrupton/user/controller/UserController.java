@@ -3,6 +3,8 @@ package com.disrupton.user.controller;
 import com.disrupton.user.dto.UserDto;
 import com.disrupton.user.dto.UserRequest;
 import com.disrupton.user.service.UserService;
+import com.disrupton.user.dto.UpdateRoleRequest;
+import com.disrupton.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     /**
      * Get all users
@@ -32,6 +35,39 @@ public class UserController {
             return ResponseEntity.ok(users);
         } catch (Exception e) {
             log.error("Error getting all users: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Update current user's role (self-service after onboarding)
+     */
+    @PostMapping("/me/role")
+    public ResponseEntity<?> updateMyRole(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody UpdateRoleRequest request) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body(Map.of("message", "Token requerido"));
+            }
+            String token = authHeader.substring(7);
+            String userId = authService.getUserIdFromToken(token);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Token inválido"));
+            }
+
+            if (request.getRole() == null || request.getRole().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Rol requerido"));
+            }
+
+            log.info("Actualizando rol propio del usuario {} a {}", userId, request.getRole());
+            UserDto updated = userService.updateUserRole(userId, request.getRole());
+            if (updated == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            log.error("Error updating my role: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -87,8 +87,8 @@ public class CollaboratorService {
             List<CollaboratorDto> all = documents.stream()
                     .map(this::documentToDTO)
                     .filter(collab -> {
-                        // Filtrar por rol (GUIDE, ARTISAN, AGENTE_CULTURAL)
-                        if (collab.getRole() == null || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(collab.getRole())) {
+                        // Filtrar por rol (GUIDE, ARTISAN) - AGENTE_CULTURAL eliminado
+                        if (collab.getRole() == null || !Arrays.asList("GUIDE", "ARTISAN").contains(collab.getRole())) {
                             return false;
                         }
                         // Filtrar por nombre si se especifica
@@ -133,7 +133,7 @@ public class CollaboratorService {
                     .document(userId)
                     .get().get();
 
-            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(doc.getString("role"))) {
+            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(doc.getString("role"))) {
                 throw new IllegalArgumentException("Colaborador no encontrado");
             }
 
@@ -170,7 +170,7 @@ public class CollaboratorService {
                 DocumentSnapshot agentDoc = transaction.get(agentRef).get();
 
                 // 2. Usar "Guard Clauses" para validar y fallar rápido.
-                if (!agentDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(agentDoc.getString("role"))) {
+                if (!agentDoc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(agentDoc.getString("role"))) {
                     throw new IllegalArgumentException("Colaborador no encontrado o rol inválido.");
                 }
 
@@ -239,6 +239,9 @@ public class CollaboratorService {
                 "accessType", "contact_networks"
         );
     }
+    
+    // MÉTODO DESHABILITADO - Era específico para rol AGENTE_CULTURAL
+    /*
     public void deleteCollaborator(String collaboratorId) {
         try {
             DocumentReference docRef = firestore.collection(COLLABORATORS_COLLECTION).document(collaboratorId);
@@ -261,6 +264,7 @@ public class CollaboratorService {
             throw new RuntimeException("Error al eliminar colaborador", e);
         }
     }
+    */
 
     /**
      * Añadir comentario a un colaborador y aprobarlo
@@ -294,7 +298,7 @@ public class CollaboratorService {
             }
 
             String role = collaboratorSnapshot.getString("role");
-            if (role == null || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(role)) {
+            if (role == null || !Arrays.asList("GUIDE", "ARTISAN").contains(role)) {
                 throw new IllegalArgumentException("Rol no válido para comentarios: " + role);
             }
 
@@ -308,7 +312,7 @@ public class CollaboratorService {
 
             Map<String, Object> commentData = Map.of(
                     "id", commentId,
-                    "culturalAgentId", collaboratorId,
+                    "collaboratorId", collaboratorId,
                     "authorUserId", userId,
                     "usuarioNombre", usuarioNombre,
                     "comentario", comentario,
@@ -322,7 +326,7 @@ public class CollaboratorService {
 
             return CommentCollabResponseDto.builder()
                     .id(commentId)
-                    .culturalAgentId(collaboratorId)
+                    .collaboratorId(collaboratorId)
                     .authorUserId(userId)
                     .usuarioNombre(usuarioNombre)
                     .comentario(comentario)
@@ -371,7 +375,7 @@ public class CollaboratorService {
                     .document(agentId)
                     .get().get();
 
-            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN", "AGENTE_CULTURAL").contains(doc.getString("role"))) {
+            if (!doc.exists() || !Arrays.asList("GUIDE", "ARTISAN").contains(doc.getString("role"))) {
                 throw new IllegalArgumentException("Colaborador no encontrado");
             }
 

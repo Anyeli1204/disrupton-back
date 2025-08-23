@@ -1,5 +1,12 @@
 package com.disrupton.culturalAgent.controller;
 
+/*
+ * NOTA: Controlador deshabilitado - Rol AGENTE_CULTURAL eliminado del sistema
+ * Este archivo se mantiene comentado para referencia histórica
+ * Si necesitas reactivar este rol, descomenta el código y añade AGENTE_CULTURAL al enum UserRole
+ */
+
+/*
 import com.disrupton.auth.annotation.RequireRole;
 import com.disrupton.auth.enums.UserRole;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/cultural-agent")
 @RequiredArgsConstructor
 @Slf4j
-@RequireRole({UserRole.AGENTE_CULTURAL, UserRole.ADMIN}) // Accessible by AGENTE_CULTURAL or ADMIN
+// @RequireRole({UserRole.AGENTE_CULTURAL, UserRole.ADMIN}) // DESHABILITADO - Rol eliminado
 public class CulturalAgentController {
 
     @GetMapping("/dashboard")
@@ -197,3 +204,4 @@ public class CulturalAgentController {
         return ResponseEntity.ok(response);
     }
 }
+*/

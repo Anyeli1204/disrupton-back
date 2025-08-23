@@ -6,7 +6,6 @@ public enum UserRole {
     MODERATOR("MODERATOR", "Moderador de contenido"),
     GUIDE("GUIDE", "Guía turístico"),
     ARTISAN("ARTISAN", "Artesano"),
-    AGENTE_CULTURAL("AGENTE_CULTURAL", "Agente Cultural"),
     PREMIUM("PREMIUM", "Usuario premium");
 
     private final String code;
@@ -50,12 +49,8 @@ public enum UserRole {
         return this == ARTISAN || this == ADMIN;
     }
 
-    public boolean isCulturalAgent() {
-        return this == AGENTE_CULTURAL || this == ADMIN;
-    }
-
     public boolean isCollaborator() {
-        return this == GUIDE || this == ARTISAN || this == AGENTE_CULTURAL || this == ADMIN;
+        return this == GUIDE || this == ARTISAN || this == ADMIN;
     }
 
     public boolean isPremium() {

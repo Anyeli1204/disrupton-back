@@ -144,13 +144,15 @@ public class CollaboratorController {
         }
     }
 
-
+    // ENDPOINT DESHABILITADO - Era específico para eliminar AGENTE_CULTURAL
+    /*
     @DeleteMapping("/{id}")
     @RequireRole({UserRole.ADMIN})
     public ResponseEntity<?> deleteCollaborator(@PathVariable String id) {
         collaboratorService.deleteCollaborator(id);
         return ResponseEntity.ok(Map.of("message", "Colaborador eliminado correctamente"));
     }
+    */
 
     /**
      * Exception handler para manejar errores específicos

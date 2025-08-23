@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class CommentCollabResponseDto {
     private String id;
-    private String culturalAgentId;
+    private String collaboratorId; // Cambiado de culturalAgentId a collaboratorId para ser más genérico
     private String authorUserId;
     private String usuarioNombre;
     private String comentario;
