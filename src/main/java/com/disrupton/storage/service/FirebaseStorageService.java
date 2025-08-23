@@ -13,11 +13,15 @@ import java.util.UUID;
 @Slf4j
 public class FirebaseStorageService {
 
-    @Value("${firebase.project.storage.bucket:disrupton2025.appspot.com}")
+    @Value("${firebase.project.storage.bucket:disrupton-new.firebasestorage.app}")  // ✅ Correcto
     private String bucketName;
 
-    private final Storage storage = StorageOptions.getDefaultInstance().getService();
+    private final Storage storage; // ✅ Inyectar el bean configurado
 
+    // Constructor para inyección de dependencias
+    public FirebaseStorageService(Storage storage) {
+        this.storage = storage;
+    }
     /**
      * Sube un archivo 3D (modelo) a Firebase Storage
      */
@@ -156,5 +160,30 @@ public class FirebaseStorageService {
             log.error("❌ Error al verificar archivo: {}", e.getMessage(), e);
             return false;
         }
+    }
+    /**
+     * Sube múltiples imágenes para comentarios del mural
+     */
+    public String uploadCommentImages(MultipartFile[] files, String userId, String commentId) throws IOException {
+        log.info("💬 Subiendo {} imágenes para comentario del mural", files.length);
+
+        String[] urls = new String[files.length];
+
+        for (int i = 0; i < files.length; i++) {
+            MultipartFile file = files[i];
+            String fileName = generateFileName(file.getOriginalFilename(), "comment");
+            String filePath = String.format("comments/%s/%s/%s", userId, commentId, fileName);
+
+            BlobId blobId = BlobId.of(bucketName, filePath);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(file.getContentType())
+                    .build();
+
+            Blob blob = storage.create(blobInfo, file.getBytes());
+            urls[i] = blob.getMediaLink();
+        }
+
+        log.info("✅ {} imágenes subidas para comentario", files.length);
+        return String.join(",", urls);
     }
 } 

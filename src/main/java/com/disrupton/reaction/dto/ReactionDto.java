@@ -12,4 +12,5 @@ public class ReactionDto {
     private String objectId; // reference a cultural_objects
     private String userId; // reference a users
     private String type; // like, dislike, star
+    private String commentId; // reference a comment (for mural comment reactions)
 } 

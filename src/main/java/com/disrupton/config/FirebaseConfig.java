@@ -22,7 +22,7 @@ public class FirebaseConfig {
     @Value("${firebase.project.id:disrupton-new}")
     private String projectId;
 
-    @Value("${firebase.project.storage.bucket:disrupton-new.appspot.com}")
+    @Value("${firebase.project.storage.bucket:disrupton-new.firebasestorage.app}")
     private String storageBucket;
 
     @Value("${firebase.service.account.file:firebase-service-account.json}")

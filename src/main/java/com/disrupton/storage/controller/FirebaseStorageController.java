@@ -210,4 +210,57 @@ public class FirebaseStorageController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
+    /**
+     * Subir imágenes para comentarios del mural
+     */
+    @PostMapping("/upload-comment-images")
+    public ResponseEntity<Map<String, Object>> uploadCommentImages(
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam("userId") String userId,
+            @RequestParam("commentId") String commentId) {
+
+        try {
+            log.info("💬 Subiendo {} imágenes para comentario del mural", files.length);
+
+            // Validar que se enviaron archivos
+            if (files == null || files.length == 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("error", "No se enviaron archivos para subir");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validar tipos de archivo
+            for (MultipartFile file : files) {
+                String contentType = file.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("error", "Solo se permiten archivos de imagen. Archivo rechazado: " + file.getOriginalFilename());
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            String downloadUrls = storageService.uploadCommentImages(files, userId, commentId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("imageUrls", downloadUrls.split(","));
+            response.put("downloadUrls", downloadUrls.split(","));
+            response.put("fileCount", files.length);
+            response.put("commentId", commentId);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("❌ Error al subir imágenes de comentario: {}", e.getMessage(), e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 } 

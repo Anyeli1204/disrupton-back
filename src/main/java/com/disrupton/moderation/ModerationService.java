@@ -16,7 +16,7 @@ public class ModerationService {
     private String apiKey;
 
     private static final String API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
     public boolean isCommentSafe(String comment) throws Exception {
         String prompt = "RECHAZA si contiene: lenguaje ofensivo, palabras soeces, agresividad, contenido sexual/violento, " +
