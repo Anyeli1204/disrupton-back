@@ -149,6 +149,75 @@ service cloud.firestore {
         request.auth.token.role == 'ADMIN';
     }
     
+    // ===== REGLAS PARA COLECCIONES =====
+    match /colecciones/{coleccionId} {
+      // Todos los usuarios autenticados pueden leer colecciones
+      allow read: if request.auth != null;
+      
+      // Solo admins y guías pueden crear colecciones
+      allow create: if request.auth != null && 
+        (request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'GUIDE' ||
+         request.auth.token.role == 'AGENTE_CULTURAL');
+      
+      // Solo admins pueden actualizar y eliminar colecciones
+      allow update, delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+      
+      // Reglas para objetos culturales dentro de colecciones
+      match /objetosCulturales/{objetoId} {
+        // Todos los usuarios autenticados pueden leer objetos culturales
+        allow read: if request.auth != null;
+        
+        // Solo admins, guías y artesanos pueden crear objetos
+        allow create: if request.auth != null && 
+          (request.auth.token.role == 'ADMIN' || 
+           request.auth.token.role == 'GUIDE' ||
+           request.auth.token.role == 'ARTISAN' ||
+           request.auth.token.role == 'AGENTE_CULTURAL');
+        
+        // Solo admins pueden actualizar y eliminar objetos
+        allow update, delete: if request.auth != null && 
+          request.auth.token.role == 'ADMIN';
+      }
+    }
+
+    // ===== REGLAS PARA DEPARTAMENTOS =====
+    match /departments/{departmentId} {
+      // Todos los usuarios autenticados pueden leer departamentos
+      allow read: if request.auth != null;
+      
+      // Solo admins pueden crear, actualizar y eliminar departamentos
+      allow create, update, delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+
+    // ===== REGLAS PARA EVENTOS =====
+    match /events/{eventId} {
+      // Todos los usuarios autenticados pueden leer eventos activos
+      allow read: if request.auth != null && 
+        (resource.data.isActive == true || 
+         request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'MODERATOR');
+      
+      // Solo admins, guías y agentes culturales pueden crear eventos
+      allow create: if request.auth != null && 
+        (request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'GUIDE' ||
+         request.auth.token.role == 'AGENTE_CULTURAL');
+      
+      // Solo el creador, admins, guías y agentes culturales pueden actualizar
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.token.role == 'ADMIN' || 
+         request.auth.token.role == 'GUIDE' ||
+         request.auth.token.role == 'AGENTE_CULTURAL');
+      
+      // Solo admins pueden eliminar eventos
+      allow delete: if request.auth != null && 
+        request.auth.token.role == 'ADMIN';
+    }
+
     // ===== REGLAS PARA AVATARES =====
     match /avatars/{avatarId} {
       // Todos los usuarios autenticados pueden leer avatares

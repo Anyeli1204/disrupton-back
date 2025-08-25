@@ -15,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @RequireRole({UserRole.ARTISAN, UserRole.ADMIN}) // Accessible by ARTISAN or ADMIN
-public class ArtisanController {
+public class ArtisanController {    
 
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getArtisanDashboard() {
