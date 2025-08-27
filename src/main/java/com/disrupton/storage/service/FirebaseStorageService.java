@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Service
@@ -179,11 +180,13 @@ public class FirebaseStorageService {
                     .setContentType(file.getContentType())
                     .build();
 
+            // ✅ SIMPLE: Solo crear el blob
             Blob blob = storage.create(blobInfo, file.getBytes());
-            urls[i] = blob.getMediaLink();
+
+            // ✅ URL directa (funciona por tu configuración IAM)
+            urls[i] = String.format("https://storage.googleapis.com/%s/%s", bucketName, filePath);
         }
 
         log.info("✅ {} imágenes subidas para comentario", files.length);
         return String.join(",", urls);
-    }
-} 
+    }}
