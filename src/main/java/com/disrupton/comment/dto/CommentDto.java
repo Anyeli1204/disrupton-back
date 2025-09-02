@@ -4,6 +4,7 @@ import com.google.cloud.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -27,4 +28,11 @@ public class CommentDto {
 
     //@PropertyName("preguntaId")
     private String preguntaId; //en caso que sea un comentario de una pregunta del mural
+    
+    // Campos adicionales para el mural
+    private String userName;
+    private String userReaction; // 'like', 'dislike', null
+    private Integer likeCount;
+    private Integer dislikeCount;
+    private List<String> imageUrls;
 } 

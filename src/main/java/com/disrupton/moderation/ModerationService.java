@@ -12,50 +12,106 @@ import java.util.Scanner;
 @Service
 @Slf4j
 public class ModerationService {
-    @Value("${gemini.api.key}")
-    private String apiKey;
-
-    private static final String API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    @Value("${gemini.service.url:http://localhost:5001}")
+    private String geminiServiceUrl;
 
     public boolean isCommentSafe(String comment) throws Exception {
-        String prompt = "RECHAZA si contiene: lenguaje ofensivo, palabras soeces, agresividad, contenido sexual/violento, " +
-                "discriminación, odio cultural (ej: \"detesto\", \"horrible\", \"primitivo\"), spam o insultos. En caso contrario APRUEBALO." +
-                "Responde solo con 'APROBADO' o 'RECHAZADO'.\n\nComentario: " + comment;
-        String response = callGemini(prompt);
-        return response.trim().toUpperCase().contains("APROBADO");
+        log.info("Moderando comentario con servicio local: {}", comment.substring(0, Math.min(comment.length(), 50)));
+        
+        try {
+            String response = callLocalModerationService(comment);
+            log.info("Respuesta de moderación: {}", response);
+            
+            // Parsear la respuesta JSON
+            JsonObject responseObj = JsonParser.parseString(response).getAsJsonObject();
+            if (responseObj.has("result")) {
+                String resultStr = responseObj.get("result").getAsString();
+                
+                // Limpiar el markdown si está presente
+                if (resultStr.contains("```json")) {
+                    resultStr = resultStr.replaceAll("```json\\s*", "").replaceAll("\\s*```", "").trim();
+                }
+                
+                JsonObject result = JsonParser.parseString(resultStr).getAsJsonObject();
+                
+                if (result.has("esSeguro")) {
+                    boolean esSeguro = result.get("esSeguro").getAsBoolean();
+                    log.info("Comentario es seguro: {}", esSeguro);
+                    return esSeguro;
+                }
+            }
+            
+            // Si hay algún problema parseando, aprobar por defecto
+            log.warn("No se pudo parsear respuesta de moderación, aprobando por defecto");
+            return true;
+            
+        } catch (Exception e) {
+            log.error("Error en moderación, aprobando por defecto: {}", e.getMessage());
+            return true; // Aprobar en caso de error
+        }
     }
 
     public String getReasonIfUnsafe(String comment) throws Exception {
-        String prompt = "Indica por qué el siguiente comentario puede ser inapropiado. Si es seguro, responde 'APROBADO'.\n\nComentario: " + comment;
-        return callGemini(prompt);
+        try {
+            String response = callLocalModerationService(comment);
+            
+            JsonObject responseObj = JsonParser.parseString(response).getAsJsonObject();
+            if (responseObj.has("result")) {
+                String resultStr = responseObj.get("result").getAsString();
+                
+                // Limpiar el markdown si está presente
+                if (resultStr.contains("```json")) {
+                    resultStr = resultStr.replaceAll("```json\\s*", "").replaceAll("\\s*```", "").trim();
+                }
+                
+                JsonObject result = JsonParser.parseString(resultStr).getAsJsonObject();
+                
+                if (result.has("motivo")) {
+                    return result.get("motivo").getAsString();
+                }
+            }
+            
+            return "No se pudo determinar el motivo";
+            
+        } catch (Exception e) {
+            log.error("Error obteniendo motivo de moderación: {}", e.getMessage());
+            return "Error en moderación";
+        }
     }
 
-    private String callGemini(String prompt) throws Exception {
-        URL url = new URL(API_URL);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("x-goog-api-key", apiKey);
-
-        String body = "{\"contents\":[{\"parts\":[{\"text\":\"" + prompt.replace("\"","\\\"") + "\"}]}]}";
-        conn.getOutputStream().write(body.getBytes());
-
-        try (Scanner sc = new Scanner(conn.getInputStream())) {
-            StringBuilder resp = new StringBuilder();
-            while (sc.hasNext()) resp.append(sc.nextLine());
-            JsonObject obj = JsonParser.parseString(resp.toString()).getAsJsonObject();
-            JsonArray cand = obj.getAsJsonArray("candidates");
-            if (cand != null && cand.size() > 0) {
-                return cand.get(0).getAsJsonObject()
-                        .getAsJsonObject("content")
-                        .getAsJsonArray("parts")
-                        .get(0).getAsJsonObject()
-                        .get("text").getAsString();
-            }
+    private String callLocalModerationService(String comment) throws Exception {
+        URL url = new URL(geminiServiceUrl + "/moderate-comment");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        
+        // Configurar la conexión
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+        
+        // Crear el JSON para enviar
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("text", comment);
+        
+        // Enviar la request
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(requestBody.toString().getBytes());
+            os.flush();
         }
-        return "❌ Sin respuesta";
+        
+        // Leer la respuesta
+        int responseCode = connection.getResponseCode();
+        if (responseCode == 200) {
+            try (Scanner scanner = new Scanner(connection.getInputStream())) {
+                StringBuilder response = new StringBuilder();
+                while (scanner.hasNextLine()) {
+                    response.append(scanner.nextLine());
+                }
+                return response.toString();
+            }
+        } else {
+            log.error("Error en servicio de moderación. Código: {}", responseCode);
+            throw new Exception("Error en servicio de moderación: " + responseCode);
+        }
     }
 }
 

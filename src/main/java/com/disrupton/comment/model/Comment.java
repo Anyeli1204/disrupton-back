@@ -2,6 +2,7 @@ package com.disrupton.comment.model;
 
 import com.google.cloud.Timestamp;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class Comment {
@@ -16,4 +17,7 @@ public class Comment {
     // Para respuestas anidadas
     private String parentCommentId;
     private String preguntaId;
+    
+    // Para imágenes en comentarios del mural
+    private List<String> imageUrls;
 } 

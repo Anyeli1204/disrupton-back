@@ -15,6 +15,44 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 model = genai.GenerativeModel('gemini-1.5-flash')
 
+def moderate_comment(comment_text):
+    """Modera un comentario usando Gemini AI"""
+    try:
+        moderation_prompt = f"""
+Analiza el siguiente comentario y determina si es apropiado para un foro cultural sobre Perú:
+
+Comentario: "{comment_text}"
+
+SOLO RECHAZA comentarios que contengan:
+- Insultos directos, groserías o lenguaje vulgar
+- Discriminación, racismo o incitación al odio
+- Amenazas o violencia
+- Contenido sexual explícito
+- Spam comercial
+- Desinformación maliciosa
+
+APRUEBA comentarios que:
+- Sean saludos simples como "hola", "gracias"
+- Expresen opiniones personales de manera educada
+- Compartan experiencias, aunque sean breves o vagas
+- Hagan preguntas sobre cultura peruana
+- Sean críticas respetuosas y constructivas
+
+Responde ÚNICAMENTE con un JSON:
+{{
+    "esSeguro": true/false,
+    "motivo": "explicación breve solo si es rechazado"
+}}
+"""
+        
+        response = model.generate_content(moderation_prompt)
+        return response.text.strip()
+        
+    except Exception as e:
+        logger.error(f"Error en moderación: {e}")
+        # En caso de error, aprobar por defecto
+        return '{"esSeguro": true, "motivo": "Error en moderación, aprobado por defecto"}'
+
 def build_avatar_prompt(avatar_type, user_message):
     """Construye el prompt personalizado para cada avatar"""
     avatar_contexts = {
@@ -233,6 +271,43 @@ def count_tokens():
         return jsonify({
             "success": False,
             "error": f"Error al contar tokens: {str(e)}"
+        }), 500
+
+@app.route('/moderate-comment', methods=['POST'])
+def moderate_comment_endpoint():
+    """Endpoint para moderar comentarios"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "No se proporcionaron datos"
+            }), 400
+            
+        # Aceptar tanto 'comment' como 'text' para compatibilidad
+        comment_text = data.get('comment') or data.get('text')
+        if not comment_text:
+            return jsonify({
+                "success": False,
+                "error": "Se requiere el campo 'comment' o 'text'"
+            }), 400
+        
+        logger.info(f"Moderando comentario: {comment_text[:50]}...")
+        
+        moderation_result = moderate_comment(comment_text)
+        logger.info(f"Resultado de moderación: {moderation_result}")
+        
+        return jsonify({
+            "success": True,
+            "result": moderation_result,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error en endpoint de moderación: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": f"Error en moderación: {str(e)}"
         }), 500
 
 if __name__ == '__main__':

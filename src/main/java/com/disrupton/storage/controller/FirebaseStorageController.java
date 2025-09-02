@@ -183,6 +183,38 @@ public class FirebaseStorageController {
     }
     
     /**
+     * Subir imágenes para comentarios del mural
+     */
+    @PostMapping("/upload-comment-images")
+    public ResponseEntity<Map<String, Object>> uploadCommentImages(
+            @RequestParam("images") MultipartFile[] images,
+            @RequestParam("userId") String userId,
+            @RequestParam("commentId") String commentId) {
+        
+        try {
+            log.info("📸 Subiendo {} imágenes para comentario: {}", images.length, commentId);
+            
+            String downloadUrls = storageService.uploadCommentImages(images, userId, commentId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("imageUrls", downloadUrls.split(","));
+            response.put("imageCount", images.length);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al subir imágenes de comentario: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    /**
      * Verificar si un archivo existe
      */
     @GetMapping("/exists")
@@ -208,6 +240,33 @@ public class FirebaseStorageController {
             response.put("error", e.getMessage());
             
             return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    /**
+     * Proxy para servir imágenes de Firebase Storage
+     * Esto resuelve problemas de conectividad en emuladores
+     */
+    @GetMapping("/image-proxy")
+    public ResponseEntity<byte[]> imageProxy(@RequestParam("imageUrl") String imageUrl) {
+        
+        try {
+            log.info("🖼️ Sirviendo imagen como proxy: {}", imageUrl);
+            
+            byte[] imageBytes = storageService.downloadImageAsBytes(imageUrl);
+            
+            if (imageBytes != null) {
+                return ResponseEntity.ok()
+                    .header("Content-Type", "image/jpeg")
+                    .header("Cache-Control", "public, max-age=3600")
+                    .body(imageBytes);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Error al servir imagen como proxy: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 } 
