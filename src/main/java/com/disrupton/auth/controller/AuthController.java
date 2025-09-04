@@ -4,12 +4,19 @@ import com.disrupton.auth.dto.AuthResponse;
 import com.disrupton.auth.dto.LoginRequest;
 import com.disrupton.auth.dto.RegisterRequest;
 import com.disrupton.auth.service.AuthService;
+import com.disrupton.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -128,5 +135,30 @@ public class AuthController {
         } else {
             return ResponseEntity.badRequest().body(AuthResponse.error("Token inválido"));
         }
+    }
+
+    /**
+     * Debug endpoint para ver información del usuario actual
+     */
+    @GetMapping("/debug/user-info")
+    public ResponseEntity<Map<String, Object>> debugUserInfo(@AuthenticationPrincipal User currentUser, 
+                                                            Authentication authentication) {
+        Map<String, Object> debugInfo = new HashMap<>();
+        
+        if (currentUser != null) {
+            debugInfo.put("userId", currentUser.getUserId());
+            debugInfo.put("email", currentUser.getEmail());
+            debugInfo.put("role", currentUser.getRole());
+            debugInfo.put("authorities", authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList()));
+        } else {
+            debugInfo.put("currentUser", "null");
+        }
+        
+        debugInfo.put("authenticated", authentication != null && authentication.isAuthenticated());
+        debugInfo.put("principal", authentication != null ? authentication.getPrincipal().getClass().getSimpleName() : "null");
+        
+        return ResponseEntity.ok(debugInfo);
     }
 }

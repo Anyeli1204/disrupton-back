@@ -1,0 +1,45 @@
+package com.disrupton.socialPost.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+@Entity
+@Table(name = "social_post_images")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SocialPostImage {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+    
+    @Column(nullable = false)
+    private String imageUrl;
+    
+    @Column
+    private String caption;
+    
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer displayOrder = 0;
+    
+    @Column
+    private String originalFileName;
+    
+    @Column
+    private Long fileSize;
+    
+    @Column
+    private String mimeType;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    @JsonIgnore
+    private SocialPost socialPost;
+}

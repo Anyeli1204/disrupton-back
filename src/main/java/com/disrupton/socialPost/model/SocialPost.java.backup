@@ -1,0 +1,107 @@
+package com.disrupton.socialPost.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+
+@Entity
+@Table(name = "social_posts")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SocialPost {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+    
+    @Column(nullable = false)
+    private String userId;
+    
+    @Column(nullable = false)
+    private String userName;
+    
+    @Column
+    private String userRole;
+    
+    @Column
+    private String userProfileImageUrl;
+    
+    @Column(length = 2000)
+    private String description;
+    
+    @OneToMany(mappedBy = "socialPost", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<SocialPostImage> images;
+    
+    @Column
+    private String location;
+    
+    @Column
+    private Double latitude;
+    
+    @Column
+    private Double longitude;
+    
+    @Column
+    private String department;
+    
+    @ElementCollection
+    @CollectionTable(name = "social_post_tags", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "tag")
+    private Set<String> tags;
+    
+    @ElementCollection
+    @CollectionTable(name = "social_post_mentioned_objects", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "object_id")
+    private Set<String> mentionedCulturalObjects;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PostPrivacy privacy = PostPrivacy.PUBLIC;
+    
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer likesCount = 0;
+    
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer commentsCount = 0;
+    
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer savesCount = 0;
+    
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer sharesCount = 0;
+    
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+    
+    @Column
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public enum PostPrivacy {
+        PUBLIC,
+        FRIENDS,
+        PRIVATE
+    }
+}

@@ -1,0 +1,68 @@
+package com.disrupton.socialPost.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "social_post_comments")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PostComment {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+    
+    @Column(name = "post_id", nullable = false)
+    private String postId;
+    
+    @Column(name = "user_id", nullable = false)
+    private String userId;
+    
+    @Column(nullable = false)
+    private String userName;
+    
+    @Column
+    private String userRole;
+    
+    @Column
+    private String userProfileImageUrl;
+    
+    @Column(length = 1000, nullable = false)
+    private String content;
+    
+    @Column(name = "parent_comment_id")
+    private String parentCommentId; // Para respuestas a comentarios
+    
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer likesCount = 0;
+    
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer repliesCount = 0;
+    
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+    
+    @Column
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+}

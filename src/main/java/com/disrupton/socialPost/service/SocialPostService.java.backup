@@ -1,0 +1,351 @@
+package com.disrupton.socialPost.service;
+
+import com.disrupton.socialPost.dto.*;
+import com.disrupton.socialPost.model.*;
+import com.disrupton.socialPost.repository.*;
+import com.disrupton.user.model.User;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class SocialPostService {
+    
+    private final SocialPostRepository socialPostRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final PostCommentRepository postCommentRepository;
+    private final PostSaveRepository postSaveRepository;
+    private final SocialPostImageRepository socialPostImageRepository;
+    
+    /**
+     * Crear una nueva publicación social
+     */
+    public SocialPostResponse createPost(CreatePostRequest request, User currentUser) {
+        log.info("Creating new social post for user: {}", currentUser.getUserId());
+        
+        SocialPost post = SocialPost.builder()
+                .userId(currentUser.getUserId())
+                .userName(currentUser.getName())
+                .userRole(currentUser.getRole())
+                .userProfileImageUrl(currentUser.getProfileImageUrl())
+                .description(request.getDescription())
+                .location(request.getLocation())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .department(request.getDepartment())
+                .tags(request.getTags())
+                .mentionedCulturalObjects(request.getMentionedCulturalObjects())
+                .privacy(request.getPrivacy())
+                .build();
+        
+        SocialPost savedPost = socialPostRepository.save(post);
+        
+        // Procesar imágenes si existen
+        if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            List<SocialPostImage> images = request.getImageUrls().stream()
+                    .map(url -> SocialPostImage.builder()
+                            .imageUrl(url)
+                            .socialPost(savedPost)
+                            .displayOrder(request.getImageUrls().indexOf(url))
+                            .build())
+                    .collect(Collectors.toList());
+            
+            socialPostImageRepository.saveAll(images);
+        }
+        
+        log.info("Social post created successfully with ID: {}", savedPost.getId());
+        return convertToResponse(savedPost, currentUser.getUserId());
+    }
+    
+    /**
+     * Obtener feed principal
+     */
+    public Page<SocialPostResponse> getFeedPosts(String currentUserId, int page, int size) {
+        log.info("Getting feed posts for user: {}, page: {}, size: {}", currentUserId, page, size);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SocialPost> posts = socialPostRepository.findByPrivacyOrderByCreatedAtDesc(
+                SocialPost.PostPrivacy.PUBLIC, pageable);
+        
+        return posts.map(post -> convertToResponse(post, currentUserId));
+    }
+    
+    /**
+     * Obtener posts de un usuario específico
+     */
+    public Page<SocialPostResponse> getUserPosts(String userId, String currentUserId, int page, int size) {
+        log.info("Getting posts for user: {}, requested by: {}", userId, currentUserId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SocialPost> posts = socialPostRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        
+        return posts.map(post -> convertToResponse(post, currentUserId));
+    }
+    
+    /**
+     * Buscar posts por contenido
+     */
+    public Page<SocialPostResponse> searchPosts(String query, String currentUserId, int page, int size) {
+        log.info("Searching posts with query: {} for user: {}", query, currentUserId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SocialPost> posts = socialPostRepository.searchPostsByContent(query, pageable);
+        
+        return posts.map(post -> convertToResponse(post, currentUserId));
+    }
+    
+    /**
+     * Obtener posts trending
+     */
+    public Page<SocialPostResponse> getTrendingPosts(String currentUserId, int page, int size) {
+        log.info("Getting trending posts for user: {}", currentUserId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime since = LocalDateTime.now().minusWeeks(1); // Últimos 7 días
+        Page<SocialPost> posts = socialPostRepository.findTrendingPosts(since, pageable);
+        
+        return posts.map(post -> convertToResponse(post, currentUserId));
+    }
+    
+    /**
+     * Obtener posts guardados por el usuario
+     */
+    public Page<SocialPostResponse> getSavedPosts(String currentUserId, int page, int size) {
+        log.info("Getting saved posts for user: {}", currentUserId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<String> savedPostIds = postSaveRepository.findSavedPostIdsByUserId(currentUserId, pageable);
+        
+        List<SocialPost> posts = socialPostRepository.findAllById(savedPostIds.getContent());
+        
+        return savedPostIds.map(postId -> {
+            Optional<SocialPost> post = posts.stream()
+                    .filter(p -> p.getId().equals(postId))
+                    .findFirst();
+            return post.map(p -> convertToResponse(p, currentUserId)).orElse(null);
+        });
+    }
+    
+    /**
+     * Dar/quitar like a un post
+     */
+    public boolean toggleLike(String postId, User currentUser) {
+        log.info("Toggling like for post: {} by user: {}", postId, currentUser.getUserId());
+        
+        Optional<PostLike> existingLike = postLikeRepository.findByPostIdAndUserId(postId, currentUser.getUserId());
+        
+        if (existingLike.isPresent()) {
+            // Quitar like
+            postLikeRepository.delete(existingLike.get());
+            updatePostLikesCount(postId, -1);
+            log.info("Like removed from post: {}", postId);
+            return false;
+        } else {
+            // Dar like
+            PostLike like = PostLike.builder()
+                    .postId(postId)
+                    .userId(currentUser.getUserId())
+                    .userName(currentUser.getName())
+                    .userProfileImageUrl(currentUser.getProfileImageUrl())
+                    .build();
+            
+            postLikeRepository.save(like);
+            updatePostLikesCount(postId, 1);
+            log.info("Like added to post: {}", postId);
+            return true;
+        }
+    }
+    
+    /**
+     * Guardar/desguardar un post
+     */
+    public boolean toggleSave(String postId, String currentUserId) {
+        log.info("Toggling save for post: {} by user: {}", postId, currentUserId);
+        
+        Optional<PostSave> existingSave = postSaveRepository.findByPostIdAndUserId(postId, currentUserId);
+        
+        if (existingSave.isPresent()) {
+            // Quitar de guardados
+            postSaveRepository.delete(existingSave.get());
+            updatePostSavesCount(postId, -1);
+            log.info("Post removed from saved: {}", postId);
+            return false;
+        } else {
+            // Guardar post
+            PostSave save = PostSave.builder()
+                    .postId(postId)
+                    .userId(currentUserId)
+                    .build();
+            
+            postSaveRepository.save(save);
+            updatePostSavesCount(postId, 1);
+            log.info("Post saved: {}", postId);
+            return true;
+        }
+    }
+    
+    /**
+     * Crear comentario en un post
+     */
+    public CommentResponse createComment(String postId, CreateCommentRequest request, User currentUser) {
+        log.info("Creating comment for post: {} by user: {}", postId, currentUser.getUserId());
+        
+        PostComment comment = PostComment.builder()
+                .postId(postId)
+                .userId(currentUser.getUserId())
+                .userName(currentUser.getName())
+                .userRole(currentUser.getRole())
+                .userProfileImageUrl(currentUser.getProfileImageUrl())
+                .content(request.getContent())
+                .parentCommentId(request.getParentCommentId())
+                .build();
+        
+        PostComment savedComment = postCommentRepository.save(comment);
+        
+        // Actualizar contador de comentarios del post
+        updatePostCommentsCount(postId, 1);
+        
+        // Si es respuesta a un comentario, actualizar contador de respuestas
+        if (request.getParentCommentId() != null) {
+            updateCommentRepliesCount(request.getParentCommentId(), 1);
+        }
+        
+        log.info("Comment created successfully with ID: {}", savedComment.getId());
+        return convertCommentToResponse(savedComment, currentUser.getUserId());
+    }
+    
+    /**
+     * Obtener comentarios de un post
+     */
+    public Page<CommentResponse> getPostComments(String postId, String currentUserId, int page, int size) {
+        log.info("Getting comments for post: {}", postId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIdIsNullOrderByCreatedAtAsc(postId, pageable);
+        
+        return comments.map(comment -> convertCommentToResponse(comment, currentUserId));
+    }
+    
+    /**
+     * Obtener tags trending
+     */
+    public List<String> getTrendingTags(int limit) {
+        log.info("Getting trending tags, limit: {}", limit);
+        
+        LocalDateTime since = LocalDateTime.now().minusWeeks(1);
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Object[]> results = socialPostRepository.findTrendingTags(since, pageable);
+        
+        return results.stream()
+                .map(result -> (String) result[0])
+                .collect(Collectors.toList());
+    }
+    
+    // Métodos privados de utilidad
+    
+    private SocialPostResponse convertToResponse(SocialPost post, String currentUserId) {
+        List<SocialPostImage> images = socialPostImageRepository.findBySocialPostIdOrderByDisplayOrder(post.getId());
+        
+        List<SocialPostResponse.PostImageDto> imageDtos = images.stream()
+                .map(img -> SocialPostResponse.PostImageDto.builder()
+                        .id(img.getId())
+                        .imageUrl(img.getImageUrl())
+                        .caption(img.getCaption())
+                        .displayOrder(img.getDisplayOrder())
+                        .originalFileName(img.getOriginalFileName())
+                        .fileSize(img.getFileSize())
+                        .mimeType(img.getMimeType())
+                        .build())
+                .collect(Collectors.toList());
+        
+        boolean isLiked = currentUserId != null && 
+                postLikeRepository.existsByPostIdAndUserId(post.getId(), currentUserId);
+        boolean isSaved = currentUserId != null && 
+                postSaveRepository.existsByPostIdAndUserId(post.getId(), currentUserId);
+        
+        return SocialPostResponse.builder()
+                .id(post.getId())
+                .userId(post.getUserId())
+                .userName(post.getUserName())
+                .userRole(post.getUserRole())
+                .userProfileImageUrl(post.getUserProfileImageUrl())
+                .description(post.getDescription())
+                .images(imageDtos)
+                .location(post.getLocation())
+                .latitude(post.getLatitude())
+                .longitude(post.getLongitude())
+                .department(post.getDepartment())
+                .tags(post.getTags())
+                .mentionedCulturalObjects(post.getMentionedCulturalObjects())
+                .privacy(post.getPrivacy().name())
+                .likesCount(post.getLikesCount())
+                .commentsCount(post.getCommentsCount())
+                .savesCount(post.getSavesCount())
+                .sharesCount(post.getSharesCount())
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .isLikedByCurrentUser(isLiked)
+                .isSavedByCurrentUser(isSaved)
+                .isOwnPost(currentUserId != null && currentUserId.equals(post.getUserId()))
+                .build();
+    }
+    
+    private CommentResponse convertCommentToResponse(PostComment comment, String currentUserId) {
+        return CommentResponse.builder()
+                .id(comment.getId())
+                .postId(comment.getPostId())
+                .userId(comment.getUserId())
+                .userName(comment.getUserName())
+                .userRole(comment.getUserRole())
+                .userProfileImageUrl(comment.getUserProfileImageUrl())
+                .content(comment.getContent())
+                .parentCommentId(comment.getParentCommentId())
+                .likesCount(comment.getLikesCount())
+                .repliesCount(comment.getRepliesCount())
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getUpdatedAt())
+                .isOwnComment(currentUserId != null && currentUserId.equals(comment.getUserId()))
+                .build();
+    }
+    
+    private void updatePostLikesCount(String postId, int delta) {
+        socialPostRepository.findById(postId).ifPresent(post -> {
+            post.setLikesCount(Math.max(0, post.getLikesCount() + delta));
+            socialPostRepository.save(post);
+        });
+    }
+    
+    private void updatePostSavesCount(String postId, int delta) {
+        socialPostRepository.findById(postId).ifPresent(post -> {
+            post.setSavesCount(Math.max(0, post.getSavesCount() + delta));
+            socialPostRepository.save(post);
+        });
+    }
+    
+    private void updatePostCommentsCount(String postId, int delta) {
+        socialPostRepository.findById(postId).ifPresent(post -> {
+            post.setCommentsCount(Math.max(0, post.getCommentsCount() + delta));
+            socialPostRepository.save(post);
+        });
+    }
+    
+    private void updateCommentRepliesCount(String commentId, int delta) {
+        postCommentRepository.findById(commentId).ifPresent(comment -> {
+            comment.setRepliesCount(Math.max(0, comment.getRepliesCount() + delta));
+            postCommentRepository.save(comment);
+        });
+    }
+}

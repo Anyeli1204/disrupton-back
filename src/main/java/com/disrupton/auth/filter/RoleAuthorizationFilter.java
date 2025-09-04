@@ -79,6 +79,9 @@ public class RoleAuthorizationFilter extends OncePerRequestFilter {
             boolean hasRequiredRole = requiredRoles.stream()
                     .anyMatch(requiredRole -> userRoles.contains(requiredRole.name()));
 
+            log.info("🔍 Debug roles - Usuario: {}, Roles usuario: {}, Roles requeridos: {}, Tiene acceso: {}", 
+                    authentication.getName(), userRoles, requiredRoles, hasRequiredRole);
+
             if (!hasRequiredRole) {
                 log.warn("⚠️ Acceso denegado: Usuario {} con roles {} intentó acceder a endpoint que requiere {}",
                         authentication.getName(), userRoles, requiredRoles);

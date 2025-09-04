@@ -73,6 +73,35 @@ public class UserController {
     }
 
     /**
+     * Get current user
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body(null);
+            }
+            String token = authHeader.substring(7);
+            String userId = authService.getUserIdFromToken(token);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(null);
+            }
+
+            log.info("Getting current user: {}", userId);
+            UserDto user = userService.getUserById(userId);
+            if (user != null) {
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("Error getting current user: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
      * Get user by ID
      */
     @GetMapping("/{userId}")
