@@ -33,6 +33,8 @@ public class SecurityConfig {
                         // Rutas públicas (sin autenticación)
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/kiri-engine/**").permitAll()
+                        .requestMatchers("/api/agentes-culturales/init-data-public").permitAll() // Endpoint temporal para inicializar datos
+                                        .requestMatchers("/api/tienda/**").permitAll() // Endpoints públicos de la tienda
                         .requestMatchers("/test-*.html").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()

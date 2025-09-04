@@ -1,207 +1,287 @@
 package com.disrupton.culturalAgent.controller;
 
-/*
- * NOTA: Controlador deshabilitado - Rol AGENTE_CULTURAL eliminado del sistema
- * Este archivo se mantiene comentado para referencia histórica
- * Si necesitas reactivar este rol, descomenta el código y añade AGENTE_CULTURAL al enum UserRole
- */
-
-/*
 import com.disrupton.auth.annotation.RequireRole;
 import com.disrupton.auth.enums.UserRole;
+import com.disrupton.culturalAgent.dto.AgenteCulturalDto;
+import com.disrupton.culturalAgent.model.AgenteCultural;
+import com.disrupton.culturalAgent.service.AgenteCulturalService;
+import com.disrupton.culturalAgent.util.AgenteCulturalDataSeeder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/cultural-agent")
+@RequestMapping("/api/agentes-culturales")
 @RequiredArgsConstructor
 @Slf4j
-// @RequireRole({UserRole.AGENTE_CULTURAL, UserRole.ADMIN}) // DESHABILITADO - Rol eliminado
+@CrossOrigin(origins = "*")
 public class CulturalAgentController {
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<Map<String, Object>> getCulturalAgentDashboard() {
-        log.info("🏛️ Accediendo al dashboard de agente cultural");
-        Map<String, Object> dashboard = new HashMap<>();
-        dashboard.put("message", "Dashboard de Agente Cultural");
-        dashboard.put("culturalAgent", true);
-        dashboard.put("features", new String[]{
-            "Gestión de eventos culturales",
-            "Programación cultural",
-            "Coordinación de artistas",
-            "Promoción cultural",
-            "Gestión de espacios culturales"
-        });
-        return ResponseEntity.ok(dashboard);
+    private final AgenteCulturalService agenteCulturalService;
+    private final AgenteCulturalDataSeeder dataSeeder;
+
+    /**
+     * Inicializa datos de prueba (solo para desarrollo)
+     */
+    @PostMapping("/init-data")
+    @RequireRole({UserRole.ADMIN})
+    public ResponseEntity<Map<String, Object>> inicializarDatos() {
+        try {
+            log.info("🌱 Inicializando datos de prueba para agentes culturales");
+            
+            dataSeeder.seedData();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Datos de prueba inicializados correctamente");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al inicializar datos: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al inicializar datos de prueba");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
-    @PostMapping("/events")
-    public ResponseEntity<Map<String, Object>> createCulturalEvent(
-            @RequestParam String title,
-            @RequestParam String description,
-            @RequestParam String category,
-            @RequestParam String location,
-            @RequestParam String startDate,
-            @RequestParam String endDate,
-            @RequestParam int expectedAttendance) {
-        log.info("🏛️ Creando evento cultural: {}", title);
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Evento cultural creado exitosamente");
-        response.put("eventId", "evt_" + System.currentTimeMillis());
-        response.put("title", title);
-        response.put("category", category);
-        response.put("location", location);
-        response.put("startDate", startDate);
-        response.put("endDate", endDate);
-        response.put("expectedAttendance", expectedAttendance);
-        response.put("createdBy", "cultural_agent");
-        return ResponseEntity.ok(response);
+    /**
+     * Obtiene todos los agentes culturales
+     */
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> obtenerTodosLosAgentes() {
+        try {
+            log.info("📋 Obteniendo todos los agentes culturales");
+            
+            List<AgenteCulturalDto> artesanosDto = agenteCulturalService.obtenerAgentesPorTipo(AgenteCultural.AgentType.ARTISAN);
+            List<AgenteCulturalDto> guiasDto = agenteCulturalService.obtenerAgentesPorTipo(AgenteCultural.AgentType.TOURIST_GUIDE);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("artesanos", artesanosDto);
+            response.put("guias", guiasDto);
+            response.put("total", artesanosDto.size() + guiasDto.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al obtener agentes: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener agentes culturales");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
-    @GetMapping("/events")
-    public ResponseEntity<Map<String, Object>> getMyEvents() {
-        log.info("🏛️ Obteniendo eventos del agente cultural");
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Eventos del agente cultural");
-        response.put("events", new Object[]{
-            Map.of("id", "evt_1", "title", "Festival de Arte Tradicional", "category", "Festival", "status", "active", "attendance", 150),
-            Map.of("id", "evt_2", "title", "Exposición de Fotografía", "category", "Exposición", "status", "upcoming", "attendance", 80),
-            Map.of("id", "evt_3", "title", "Concierto de Música Folclórica", "category", "Concierto", "status", "completed", "attendance", 200)
-        });
-        return ResponseEntity.ok(response);
+    /**
+     * Obtiene artesanos
+     */
+    @GetMapping("/artesanos")
+    public ResponseEntity<Map<String, Object>> obtenerArtesanos() {
+        try {
+            log.info("🎨 Obteniendo artesanos");
+            
+            List<AgenteCulturalDto> artesanosDto = agenteCulturalService.obtenerAgentesPorTipo(AgenteCultural.AgentType.ARTISAN);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", artesanosDto);
+            response.put("count", artesanosDto.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al obtener artesanos: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener artesanos");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
-    @PostMapping("/artists")
-    public ResponseEntity<Map<String, Object>> registerArtist(
-            @RequestParam String name,
-            @RequestParam String specialty,
-            @RequestParam String contactInfo,
-            @RequestParam String portfolio) {
-        log.info("🏛️ Registrando artista: {}", name);
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Artista registrado exitosamente");
-        response.put("artistId", "art_" + System.currentTimeMillis());
-        response.put("name", name);
-        response.put("specialty", specialty);
-        response.put("contactInfo", contactInfo);
-        response.put("portfolio", portfolio);
-        response.put("registeredBy", "cultural_agent");
-        return ResponseEntity.ok(response);
+    /**
+     * Obtiene guías turísticos
+     */
+    @GetMapping("/guias")
+    public ResponseEntity<Map<String, Object>> obtenerGuias() {
+        try {
+            log.info("🗺️ Obteniendo guías turísticos");
+            
+            List<AgenteCulturalDto> guiasDto = agenteCulturalService.obtenerAgentesPorTipo(AgenteCultural.AgentType.TOURIST_GUIDE);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", guiasDto);
+            response.put("count", guiasDto.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al obtener guías: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener guías turísticos");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
-    @GetMapping("/artists")
-    public ResponseEntity<Map<String, Object>> getRegisteredArtists() {
-        log.info("🏛️ Obteniendo artistas registrados");
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Artistas registrados");
-        response.put("artists", new Object[]{
-            Map.of("id", "art_1", "name", "María González", "specialty", "Pintura", "status", "active"),
-            Map.of("id", "art_2", "name", "Carlos Rodríguez", "specialty", "Escultura", "status", "active"),
-            Map.of("id", "art_3", "name", "Ana Martínez", "specialty", "Danza", "status", "inactive")
-        });
-        return ResponseEntity.ok(response);
+    /**
+     * Busca agentes culturales por término
+     */
+    @GetMapping("/buscar")
+    public ResponseEntity<Map<String, Object>> buscarAgentes(
+            @RequestParam String termino,
+            @RequestParam(required = false) String tipo) {
+        try {
+            log.info("🔍 Buscando agentes con término: '{}', tipo: '{}'", termino, tipo);
+            
+            AgenteCultural.AgentType tipoEnum = null;
+            if (tipo != null && !tipo.trim().isEmpty()) {
+                try {
+                    tipoEnum = AgenteCultural.AgentType.valueOf(tipo.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Tipo de agente no válido: {}", tipo);
+                }
+            }
+            
+            List<AgenteCulturalDto> agentesDto = agenteCulturalService.buscarAgentes(termino, tipoEnum);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", agentesDto);
+            response.put("count", agentesDto.size());
+            response.put("termino", termino);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error en búsqueda: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error en la búsqueda de agentes");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
-    @PostMapping("/spaces")
-    public ResponseEntity<Map<String, Object>> manageCulturalSpace(
-            @RequestParam String name,
-            @RequestParam String type,
-            @RequestParam String location,
-            @RequestParam int capacity,
-            @RequestParam String facilities) {
-        log.info("🏛️ Gestionando espacio cultural: {}", name);
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Espacio cultural gestionado exitosamente");
-        response.put("spaceId", "spc_" + System.currentTimeMillis());
-        response.put("name", name);
-        response.put("type", type);
-        response.put("location", location);
-        response.put("capacity", capacity);
-        response.put("facilities", facilities);
-        response.put("managedBy", "cultural_agent");
-        return ResponseEntity.ok(response);
+    /**
+     * Obtiene agentes por departamento/ubicación
+     */
+    @GetMapping("/ubicacion/{departamento}")
+    public ResponseEntity<Map<String, Object>> obtenerPorUbicacion(@PathVariable String departamento) {
+        try {
+            log.info("📍 Obteniendo agentes en: {}", departamento);
+            
+            List<AgenteCulturalDto> agentesDto = agenteCulturalService.obtenerAgentesPorUbicacion(departamento);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", agentesDto);
+            response.put("count", agentesDto.size());
+            response.put("departamento", departamento);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al obtener agentes por ubicación: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener agentes por ubicación");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
-    @GetMapping("/spaces")
-    public ResponseEntity<Map<String, Object>> getManagedSpaces() {
-        log.info("🏛️ Obteniendo espacios gestionados");
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Espacios culturales gestionados");
-        response.put("spaces", new Object[]{
-            Map.of("id", "spc_1", "name", "Centro Cultural Municipal", "type", "Centro Cultural", "capacity", 500, "status", "active"),
-            Map.of("id", "spc_2", "name", "Teatro Comunitario", "type", "Teatro", "capacity", 200, "status", "active"),
-            Map.of("id", "spc_3", "name", "Galería de Arte", "type", "Galería", "capacity", 100, "status", "maintenance")
-        });
-        return ResponseEntity.ok(response);
+    /**
+     * Obtiene estadísticas generales
+     */
+    @GetMapping("/estadisticas")
+    public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
+        try {
+            log.info("📊 Obteniendo estadísticas de agentes culturales");
+            
+            List<AgenteCulturalDto> artesanos = agenteCulturalService.obtenerAgentesPorTipo(AgenteCultural.AgentType.ARTISAN);
+            List<AgenteCulturalDto> guias = agenteCulturalService.obtenerAgentesPorTipo(AgenteCultural.AgentType.TOURIST_GUIDE);
+            
+            Map<String, Object> estadisticas = new HashMap<>();
+            estadisticas.put("totalArtesanos", artesanos.size());
+            estadisticas.put("totalGuias", guias.size());
+            estadisticas.put("totalAgentes", artesanos.size() + guias.size());
+            
+            // Estadísticas por departamento
+            Map<String, Integer> porDepartamento = new HashMap<>();
+            artesanos.forEach(agente -> {
+                String dept = agente.getDepartment();
+                if (dept != null) {
+                    porDepartamento.put(dept, porDepartamento.getOrDefault(dept, 0) + 1);
+                }
+            });
+            guias.forEach(agente -> {
+                String dept = agente.getDepartment();
+                if (dept != null) {
+                    porDepartamento.put(dept, porDepartamento.getOrDefault(dept, 0) + 1);
+                }
+            });
+            
+            estadisticas.put("porDepartamento", porDepartamento);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("estadisticas", estadisticas);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al obtener estadísticas: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener estadísticas");
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
-
-    @PostMapping("/programs")
-    public ResponseEntity<Map<String, Object>> createCulturalProgram(
-            @RequestParam String title,
-            @RequestParam String description,
-            @RequestParam String targetAudience,
-            @RequestParam String duration,
-            @RequestParam double budget) {
-        log.info("🏛️ Creando programa cultural: {}", title);
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Programa cultural creado exitosamente");
-        response.put("programId", "prg_" + System.currentTimeMillis());
-        response.put("title", title);
-        response.put("targetAudience", targetAudience);
-        response.put("duration", duration);
-        response.put("budget", budget);
-        response.put("createdBy", "cultural_agent");
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/programs")
-    public ResponseEntity<Map<String, Object>> getCulturalPrograms() {
-        log.info("🏛️ Obteniendo programas culturales");
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Programas culturales");
-        response.put("programs", new Object[]{
-            Map.of("id", "prg_1", "title", "Arte en las Escuelas", "targetAudience", "Estudiantes", "status", "active"),
-            Map.of("id", "prg_2", "title", "Cultura para Adultos Mayores", "targetAudience", "Adultos Mayores", "status", "active"),
-            Map.of("id", "prg_3", "title", "Festival Intercultural", "targetAudience", "Público General", "status", "planning")
-        });
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/promotion")
-    public ResponseEntity<Map<String, Object>> getPromotionStats() {
-        log.info("🏛️ Obteniendo estadísticas de promoción");
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Estadísticas de promoción cultural");
-        response.put("totalEvents", 25);
-        response.put("totalAttendance", 3500);
-        response.put("socialMediaReach", 15000);
-        response.put("mediaCoverage", 8);
-        response.put("partnerships", 12);
-        response.put("topEvents", new Object[]{
-            Map.of("event", "Festival de Arte Tradicional", "attendance", 500, "reach", 3000),
-            Map.of("event", "Exposición de Fotografía", "attendance", 200, "reach", 1500)
-        });
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getCulturalAgentStats() {
-        log.info("🏛️ Obteniendo estadísticas del agente cultural");
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Estadísticas del agente cultural");
-        response.put("totalEvents", 25);
-        response.put("activeArtists", 15);
-        response.put("managedSpaces", 5);
-        response.put("culturalPrograms", 8);
-        response.put("totalAttendance", 3500);
-        response.put("averageRating", 4.6);
-        response.put("categories", new String[]{"Festival", "Exposición", "Concierto", "Teatro", "Danza", "Literatura"});
-        return ResponseEntity.ok(response);
+    
+    /**
+     * Endpoint temporal sin autenticación para inicializar datos
+     */
+    @GetMapping("/init-data-public")
+    public ResponseEntity<Map<String, Object>> inicializarDatosPublico() {
+        try {
+            log.info("🚀 Inicializando datos de agentes culturales (público)");
+            
+            dataSeeder.seedData();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Datos inicializados correctamente");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Error al inicializar datos: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al inicializar datos: " + e.getMessage());
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 }
-*/
