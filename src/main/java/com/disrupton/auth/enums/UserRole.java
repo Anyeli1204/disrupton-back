@@ -6,7 +6,9 @@ public enum UserRole {
     MODERATOR("MODERATOR", "Moderador de contenido"),
     GUIDE("GUIDE", "Guía turístico"),
     ARTISAN("ARTISAN", "Artesano"),
-    PREMIUM("PREMIUM", "Usuario premium");
+    AGENTE_CULTURAL("AGENTE_CULTURAL", "Agente Cultural"),
+    PREMIUM("PREMIUM", "Usuario premium"),
+    PREMIUM_MAX("PREMIUM_MAX", "Usuario super-premium");
 
     private final String code;
     private final String description;
@@ -54,6 +56,14 @@ public enum UserRole {
     }
 
     public boolean isPremium() {
-        return this == PREMIUM || this == ADMIN;
+        return this == PREMIUM || this == PREMIUM_MAX || this == ADMIN;
+    }
+
+    public boolean isPremiumMax() {
+        return this == PREMIUM_MAX || this == ADMIN;
+    }
+
+    public boolean isAgenteCultural() {
+        return this == AGENTE_CULTURAL || this == ADMIN;
     }
 }

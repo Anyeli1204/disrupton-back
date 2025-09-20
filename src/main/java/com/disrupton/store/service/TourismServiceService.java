@@ -1,11 +1,11 @@
 package com.disrupton.store.service;
 
+import com.disrupton.quota.service.QuotaService;
 import com.disrupton.store.dto.TourismServiceDto;
 import com.disrupton.store.model.TourismService;
-import com.google.cloud.firestore.CollectionReference;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.Query;
+import com.disrupton.user.service.UserService;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,8 @@ import java.util.concurrent.ExecutionException;
 public class TourismServiceService {
 
     private final Firestore firestore;
+    private final QuotaService quotaService;
+    private final UserService userService;
     private static final String COLLECTION_NAME = "tourismServices";
 
     /**
@@ -217,17 +219,247 @@ public class TourismServiceService {
     }
 
     /**
+     * Crear un nuevo servicio turístico (con validación de cuotas)
+     */
+    public TourismServiceDto createService(String guideId, TourismServiceDto serviceRequest) throws ExecutionException, InterruptedException {
+        log.info("🗺️ Creando nuevo servicio para guía: {}", guideId);
+
+        // Validar que el usuario es guía
+        var user = userService.getUserById(guideId);
+        if (user == null || !"GUIDE".equals(user.getRole())) {
+            throw new IllegalArgumentException("Solo los guías pueden crear servicios turísticos");
+        }
+
+        // Verificar cuota mensual
+        if (!quotaService.canUploadService(guideId)) {
+            throw new IllegalStateException("Has excedido tu límite mensual de servicios. Puedes comprar servicios adicionales.");
+        }
+
+        // Crear el servicio
+        TourismService service = new TourismService();
+        String serviceId = UUID.randomUUID().toString();
+
+        // Información básica
+        service.setId(serviceId);
+        service.setName(serviceRequest.getName());
+        service.setDescription(serviceRequest.getDescription());
+        service.setShortDescription(serviceRequest.getShortDescription());
+
+        // Precio
+        service.setPricePerPerson(serviceRequest.getPricePerPerson());
+        service.setGroupPrice(serviceRequest.getGroupPrice());
+        service.setCurrency(serviceRequest.getCurrency() != null ? serviceRequest.getCurrency() : "PEN");
+        service.setFormattedPrice(serviceRequest.getFormattedPrice());
+
+        // Imágenes
+        service.setMainImageUrl(serviceRequest.getMainImageUrl());
+        service.setAdditionalImages(serviceRequest.getAdditionalImages());
+
+        // Ubicación
+        service.setLocation(serviceRequest.getLocation());
+        service.setDepartment(serviceRequest.getDepartment());
+        service.setProvince(serviceRequest.getProvince());
+        service.setDistrict(serviceRequest.getDistrict());
+        service.setLatitude(serviceRequest.getLatitude());
+        service.setLongitude(serviceRequest.getLongitude());
+        service.setVisitedPlaces(serviceRequest.getVisitedPlaces());
+
+        // Categorización
+        if (serviceRequest.getCategory() != null) {
+            for (TourismService.ServiceCategory category : TourismService.ServiceCategory.values()) {
+                if (category.name().equals(serviceRequest.getCategory())) {
+                    service.setCategory(category);
+                    break;
+                }
+            }
+        }
+
+        if (serviceRequest.getType() != null) {
+            for (TourismService.ServiceType type : TourismService.ServiceType.values()) {
+                if (type.name().equals(serviceRequest.getType())) {
+                    service.setType(type);
+                    break;
+                }
+            }
+        }
+
+        if (serviceRequest.getDifficulty() != null) {
+            for (TourismService.DifficultyLevel difficulty : TourismService.DifficultyLevel.values()) {
+                if (difficulty.name().equals(serviceRequest.getDifficulty())) {
+                    service.setDifficulty(difficulty);
+                    break;
+                }
+            }
+        }
+
+        service.setTags(serviceRequest.getTags());
+
+        // Duración y horarios
+        service.setDuration(serviceRequest.getDuration());
+        service.setSchedule(serviceRequest.getSchedule());
+        service.setAvailableDays(serviceRequest.getAvailableDays());
+        service.setIsFlexibleSchedule(serviceRequest.getIsFlexibleSchedule());
+
+        // Guía
+        service.setGuideId(guideId);
+        service.setGuideName(user.getName());
+        service.setGuideContact(user.getEmail());
+        service.setSpokenLanguages(serviceRequest.getSpokenLanguages());
+
+        // Capacidad y requisitos
+        service.setMinGroupSize(serviceRequest.getMinGroupSize());
+        service.setMaxGroupSize(serviceRequest.getMaxGroupSize());
+        service.setAgeRestriction(serviceRequest.getAgeRestriction());
+        service.setPhysicalRequirement(serviceRequest.getPhysicalRequirement());
+        service.setIncluded(serviceRequest.getIncluded());
+        service.setNotIncluded(serviceRequest.getNotIncluded());
+
+        // Estado
+        service.setIsAvailable(true);
+        service.setRequiresAdvanceBooking(serviceRequest.getRequiresAdvanceBooking());
+        service.setAdvanceBookingTime(serviceRequest.getAdvanceBookingTime());
+
+        // Métricas iniciales
+        service.setRating(0.0);
+        service.setTotalRatings(0);
+        service.setViewCount(0);
+        service.setBookingCount(0);
+
+        // Metadatos
+        service.setCreatedAt(LocalDateTime.now().toString());
+        service.setUpdatedAt(LocalDateTime.now().toString());
+        service.setCreatedBy(guideId);
+
+        // Guardar en Firestore
+        ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME).document(serviceId).set(service);
+        WriteResult result = future.get();
+
+        // Registrar en el sistema de cuotas
+        quotaService.recordServiceUpload(guideId);
+
+        log.info("✅ Servicio creado exitosamente: {} para guía: {}. Timestamp: {}",
+                serviceId, guideId, result.getUpdateTime());
+
+        return convertToDto(service);
+    }
+
+    /**
+     * Actualizar un servicio existente
+     */
+    public TourismServiceDto updateService(String serviceId, String guideId, TourismServiceDto serviceRequest)
+            throws ExecutionException, InterruptedException {
+        log.info("🔄 Actualizando servicio: {} por guía: {}", serviceId, guideId);
+
+        // Verificar que el servicio existe y pertenece al guía
+        DocumentSnapshot doc = firestore.collection(COLLECTION_NAME).document(serviceId).get().get();
+        if (!doc.exists()) {
+            throw new IllegalArgumentException("Servicio no encontrado: " + serviceId);
+        }
+
+        TourismService existingService = doc.toObject(TourismService.class);
+        if (!guideId.equals(existingService.getGuideId())) {
+            throw new IllegalArgumentException("No tienes permiso para actualizar este servicio");
+        }
+
+        // Actualizar campos modificables
+        existingService.setName(serviceRequest.getName());
+        existingService.setDescription(serviceRequest.getDescription());
+        existingService.setShortDescription(serviceRequest.getShortDescription());
+        existingService.setPricePerPerson(serviceRequest.getPricePerPerson());
+        existingService.setGroupPrice(serviceRequest.getGroupPrice());
+        existingService.setFormattedPrice(serviceRequest.getFormattedPrice());
+        existingService.setMainImageUrl(serviceRequest.getMainImageUrl());
+        existingService.setAdditionalImages(serviceRequest.getAdditionalImages());
+        existingService.setDuration(serviceRequest.getDuration());
+        existingService.setSchedule(serviceRequest.getSchedule());
+        existingService.setAvailableDays(serviceRequest.getAvailableDays());
+        existingService.setIsFlexibleSchedule(serviceRequest.getIsFlexibleSchedule());
+        existingService.setMinGroupSize(serviceRequest.getMinGroupSize());
+        existingService.setMaxGroupSize(serviceRequest.getMaxGroupSize());
+        existingService.setIsAvailable(serviceRequest.getIsAvailable());
+        existingService.setIncluded(serviceRequest.getIncluded());
+        existingService.setNotIncluded(serviceRequest.getNotIncluded());
+        existingService.setUpdatedAt(LocalDateTime.now().toString());
+
+        // Guardar cambios
+        ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME).document(serviceId).set(existingService);
+        WriteResult result = future.get();
+
+        log.info("✅ Servicio actualizado: {}. Timestamp: {}", serviceId, result.getUpdateTime());
+
+        return convertToDto(existingService);
+    }
+
+    /**
+     * Eliminar un servicio
+     */
+    public boolean deleteService(String serviceId, String guideId) throws ExecutionException, InterruptedException {
+        log.info("🗑️ Eliminando servicio: {} por guía: {}", serviceId, guideId);
+
+        // Verificar que el servicio existe y pertenece al guía
+        DocumentSnapshot doc = firestore.collection(COLLECTION_NAME).document(serviceId).get().get();
+        if (!doc.exists()) {
+            throw new IllegalArgumentException("Servicio no encontrado: " + serviceId);
+        }
+
+        TourismService service = doc.toObject(TourismService.class);
+        if (!guideId.equals(service.getGuideId())) {
+            throw new IllegalArgumentException("No tienes permiso para eliminar este servicio");
+        }
+
+        // Eliminar servicio
+        ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME).document(serviceId).delete();
+        WriteResult result = future.get();
+
+        log.info("✅ Servicio eliminado: {}. Timestamp: {}", serviceId, result.getUpdateTime());
+        return true;
+    }
+
+    /**
+     * Obtener servicios destacados (featured)
+     */
+    public List<TourismServiceDto> getFeaturedServices() throws ExecutionException, InterruptedException {
+        log.info("⭐ Obteniendo servicios destacados");
+
+        List<TourismServiceDto> allServices = getAllServices();
+
+        // Filtrar servicios de guías con featured activo
+        List<TourismServiceDto> featuredServices = new ArrayList<>();
+
+        for (TourismServiceDto service : allServices) {
+            try {
+                if (quotaService.hasFeaturedPlacement(service.getGuideId())) {
+                    featuredServices.add(service);
+                }
+            } catch (Exception e) {
+                log.warn("⚠️ Error verificando featured para guía {}: {}",
+                        service.getGuideId(), e.getMessage());
+            }
+        }
+
+        // Ordenar por rating y fecha de actualización
+        featuredServices.sort((s1, s2) -> {
+            int ratingComparison = Double.compare(s2.getRating(), s1.getRating());
+            if (ratingComparison != 0) return ratingComparison;
+            return s2.getUpdatedAt().compareTo(s1.getUpdatedAt());
+        });
+
+        log.info("✅ Servicios destacados encontrados: {}", featuredServices.size());
+        return featuredServices;
+    }
+
+    /**
      * Incrementar contador de visualizaciones
      */
     public void incrementViewCount(String serviceId) {
         try {
             log.info("👁️ Incrementando contador de visualizaciones para servicio: {}", serviceId);
-            
+
             firestore.collection(COLLECTION_NAME)
                     .document(serviceId)
                     .update("viewCount", com.google.cloud.firestore.FieldValue.increment(1),
                            "lastViewed", LocalDateTime.now().toString());
-                           
+
         } catch (Exception e) {
             log.warn("⚠️ Error al incrementar contador de visualizaciones: {}", e.getMessage());
         }

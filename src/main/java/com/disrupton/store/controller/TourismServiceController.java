@@ -1,13 +1,17 @@
 package com.disrupton.store.controller;
 
+import com.disrupton.auth.annotation.RequireRole;
 import com.disrupton.store.dto.TourismServiceDto;
 import com.disrupton.store.model.TourismService;
 import com.disrupton.store.service.TourismServiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,32 +277,223 @@ public class TourismServiceController {
     }
 
     /**
+     * Obtener servicios destacados
+     */
+    @GetMapping("/destacados")
+    public ResponseEntity<Map<String, Object>> getFeaturedServices() {
+        try {
+            log.info("⭐ Obteniendo servicios destacados");
+
+            List<TourismServiceDto> services = tourismServiceService.getFeaturedServices();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", services);
+            response.put("count", services.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("❌ Error al obtener servicios destacados: {}", e.getMessage(), e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener servicios destacados");
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Crear un nuevo servicio turístico (solo GUIDE)
+     */
+    @PostMapping("/crear")
+    @RequireRole({"GUIDE"})
+    public ResponseEntity<Map<String, Object>> createService(
+            @Valid @RequestBody TourismServiceDto serviceRequest,
+            Authentication authentication) {
+        try {
+            String guideId = authentication.getName();
+            log.info("🗺️ Creando servicio para guía: {}", guideId);
+
+            TourismServiceDto createdService = tourismServiceService.createService(guideId, serviceRequest);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", createdService);
+            response.put("message", "Servicio creado exitosamente");
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (IllegalStateException e) {
+            log.warn("⚠️ Límite excedido: {}", e.getMessage());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            response.put("errorType", "QUOTA_EXCEEDED");
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ Datos inválidos: {}", e.getMessage());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            log.error("❌ Error creando servicio: {}", e.getMessage(), e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error interno al crear servicio");
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Actualizar un servicio existente (solo el guía dueño)
+     */
+    @PutMapping("/{serviceId}")
+    @RequireRole({"GUIDE"})
+    public ResponseEntity<Map<String, Object>> updateService(
+            @PathVariable String serviceId,
+            @Valid @RequestBody TourismServiceDto serviceRequest,
+            Authentication authentication) {
+        try {
+            String guideId = authentication.getName();
+            log.info("🔄 Actualizando servicio {} por guía: {}", serviceId, guideId);
+
+            TourismServiceDto updatedService = tourismServiceService.updateService(serviceId, guideId, serviceRequest);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", updatedService);
+            response.put("message", "Servicio actualizado exitosamente");
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ Error de autorización/datos: {}", e.getMessage());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            log.error("❌ Error actualizando servicio: {}", e.getMessage(), e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error interno al actualizar servicio");
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Eliminar un servicio (solo el guía dueño)
+     */
+    @DeleteMapping("/{serviceId}")
+    @RequireRole({"GUIDE"})
+    public ResponseEntity<Map<String, Object>> deleteService(
+            @PathVariable String serviceId,
+            Authentication authentication) {
+        try {
+            String guideId = authentication.getName();
+            log.info("🗑️ Eliminando servicio {} por guía: {}", serviceId, guideId);
+
+            boolean deleted = tourismServiceService.deleteService(serviceId, guideId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", deleted);
+            response.put("message", deleted ? "Servicio eliminado exitosamente" : "No se pudo eliminar el servicio");
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ Error de autorización: {}", e.getMessage());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            log.error("❌ Error eliminando servicio: {}", e.getMessage(), e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error interno al eliminar servicio");
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Obtener mis servicios (solo para guías)
+     */
+    @GetMapping("/mis-servicios")
+    @RequireRole({"GUIDE"})
+    public ResponseEntity<Map<String, Object>> getMyServices(Authentication authentication) {
+        try {
+            String guideId = authentication.getName();
+            log.info("🧭 Obteniendo servicios del guía: {}", guideId);
+
+            List<TourismServiceDto> services = tourismServiceService.getServicesByGuide(guideId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", services);
+            response.put("count", services.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("❌ Error obteniendo mis servicios: {}", e.getMessage(), e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Error al obtener tus servicios");
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
      * Obtener niveles de dificultad disponibles
      */
     @GetMapping("/dificultades")
     public ResponseEntity<Map<String, Object>> getDifficultyLevels() {
         try {
             log.info("⛰️ Obteniendo niveles de dificultad");
-            
+
             Map<String, String> difficulties = new HashMap<>();
             for (TourismService.DifficultyLevel difficulty : TourismService.DifficultyLevel.values()) {
                 difficulties.put(difficulty.name(), difficulty.getDisplayName());
             }
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", difficulties);
             response.put("count", difficulties.size());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             log.error("❌ Error al obtener dificultades: {}", e.getMessage(), e);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("error", "Error al obtener niveles de dificultad");
-            
+
             return ResponseEntity.internalServerError().body(response);
         }
     }

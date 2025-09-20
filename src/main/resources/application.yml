@@ -51,6 +51,15 @@ jwt:
   expiration: ${JWT_EXPIRATION:86400000} # 24 horas en milisegundos
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 días en milisegundos
 
+# Configuración de MercadoPago
+mercadopago:
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN:TEST-YOUR_ACCESS_TOKEN_HERE}
+  public-key: ${MERCADOPAGO_PUBLIC_KEY:TEST-YOUR_PUBLIC_KEY_HERE}
+  client-id: ${MERCADOPAGO_CLIENT_ID:YOUR_CLIENT_ID_HERE}
+  client-secret: ${MERCADOPAGO_CLIENT_SECRET:YOUR_CLIENT_SECRET_HERE}
+  webhook-secret: ${MERCADOPAGO_WEBHOOK_SECRET:}
+  environment: ${MERCADOPAGO_ENVIRONMENT:sandbox} # sandbox o production
+
 # Configuración de logging
 logging:
   level:

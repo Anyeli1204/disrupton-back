@@ -371,26 +371,128 @@ public class UserService {
      */
     public UserDto updateUserStatus(String userId, boolean active) throws ExecutionException, InterruptedException {
         log.info("🔄 {} usuario: {}", active ? "Activando" : "Desactivando", userId);
-        
+
         DocumentSnapshot document = firestore.collection(COLLECTION_NAME).document(userId).get().get();
-        
+
         if (!document.exists()) {
             log.warn("⚠️ Usuario no encontrado para actualizar estado: {}", userId);
             return null;
         }
-        
+
         UserDto user = document.toObject(UserDto.class);
         user.setIsActive(active);
         user.setUpdatedAt(Timestamp.now());
-        
+
         ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME)
                 .document(userId)
                 .set(user);
-        
+
         WriteResult result = future.get();
-        log.info("✅ Estado actualizado para usuario: {}. Activo: {}. Timestamp: {}", 
+        log.info("✅ Estado actualizado para usuario: {}. Activo: {}. Timestamp: {}",
                 userId, active, result.getUpdateTime());
-        
+
         return user;
+    }
+
+    /**
+     * Actualiza el rol y configura premium según el pago realizado
+     */
+    public UserDto upgradeUserToPremium(String userId, String newRole, int durationDays) throws ExecutionException, InterruptedException {
+        log.info("⭐ Actualizando usuario {} a rol {} con premium por {} días", userId, newRole, durationDays);
+
+        DocumentSnapshot document = firestore.collection(COLLECTION_NAME).document(userId).get().get();
+
+        if (!document.exists()) {
+            log.warn("⚠️ Usuario no encontrado para upgrade premium: {}", userId);
+            return null;
+        }
+
+        UserDto user = document.toObject(UserDto.class);
+
+        // Actualizar rol
+        user.setRole(newRole);
+
+        // Configurar premium
+        user.setIsPremium(true);
+
+        // Calcular fecha de expiración
+        long currentTime = System.currentTimeMillis();
+        long expirationTime = currentTime + (durationDays * 24L * 60L * 60L * 1000L);
+        user.setPremiumExpiresAt(Timestamp.of(new java.util.Date(expirationTime)));
+
+        user.setUpdatedAt(Timestamp.now());
+
+        ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME)
+                .document(userId)
+                .set(user);
+
+        WriteResult result = future.get();
+        log.info("✅ Usuario {} actualizado a {} con premium hasta {}. Timestamp: {}",
+                userId, newRole, user.getPremiumExpiresAt(), result.getUpdateTime());
+
+        return user;
+    }
+
+    /**
+     * Verifica y actualiza el estado premium de todos los usuarios (para tarea programada)
+     */
+    public void checkAndUpdateExpiredPremiumUsers() throws ExecutionException, InterruptedException {
+        log.info("🔍 Verificando usuarios premium expirados...");
+
+        long currentTime = System.currentTimeMillis();
+        Timestamp now = Timestamp.of(new java.util.Date(currentTime));
+
+        // Obtener usuarios premium que podrían haber expirado
+        var premiumUsers = firestore.collection(COLLECTION_NAME)
+                .whereEqualTo("isPremium", true)
+                .get()
+                .get()
+                .toObjects(UserDto.class);
+
+        int expiredCount = 0;
+
+        for (UserDto user : premiumUsers) {
+            if (user.getPremiumExpiresAt() != null && user.getPremiumExpiresAt().compareTo(now) < 0) {
+                // Premium expirado, revertir a usuario regular
+                user.setIsPremium(false);
+                user.setRole("USER");
+                user.setPremiumExpiresAt(null);
+                user.setUpdatedAt(Timestamp.now());
+
+                firestore.collection(COLLECTION_NAME).document(user.getUserId()).set(user).get();
+
+                log.info("⏰ Premium expirado para usuario: {} - Revertido a USER", user.getUserId());
+                expiredCount++;
+            }
+        }
+
+        log.info("✅ Verificación completada. {} usuarios premium expirados procesados", expiredCount);
+    }
+
+    /**
+     * Obtiene usuarios premium próximos a expirar (para notificaciones)
+     */
+    public List<UserDto> getUsersWithExpiringPremium(int daysBeforeExpiration) throws ExecutionException, InterruptedException {
+        log.info("🔔 Buscando usuarios premium que expiran en {} días", daysBeforeExpiration);
+
+        long currentTime = System.currentTimeMillis();
+        long targetTime = currentTime + (daysBeforeExpiration * 24L * 60L * 60L * 1000L);
+        Timestamp targetTimestamp = Timestamp.of(new java.util.Date(targetTime));
+
+        var premiumUsers = firestore.collection(COLLECTION_NAME)
+                .whereEqualTo("isPremium", true)
+                .get()
+                .get()
+                .toObjects(UserDto.class);
+
+        return premiumUsers.stream()
+                .filter(user -> user.getPremiumExpiresAt() != null)
+                .filter(user -> {
+                    long expirationTime = user.getPremiumExpiresAt().toDate().getTime();
+                    long timeUntilExpiration = expirationTime - currentTime;
+                    long daysUntilExpiration = timeUntilExpiration / (24L * 60L * 60L * 1000L);
+                    return daysUntilExpiration <= daysBeforeExpiration && daysUntilExpiration > 0;
+                })
+                .toList();
     }
 }

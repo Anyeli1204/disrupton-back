@@ -1,7 +1,9 @@
 package com.disrupton.store.service;
 
+import com.disrupton.quota.service.QuotaService;
 import com.disrupton.store.dto.ProductDto;
 import com.disrupton.store.model.Product;
+import com.disrupton.user.service.UserService;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -23,6 +26,8 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final Firestore db;
+    private final QuotaService quotaService;
+    private final UserService userService;
     private static final String COLLECTION_NAME = "products";
 
     /**
@@ -170,6 +175,207 @@ public class ProductService {
         }
         
         return productDtos;
+    }
+
+    /**
+     * Crear un nuevo producto (con validación de cuotas)
+     */
+    public ProductDto createProduct(String artisanId, ProductDto productRequest) throws ExecutionException, InterruptedException {
+        log.info("📦 Creando nuevo producto para artesano: {}", artisanId);
+
+        // Validar que el usuario es artesano
+        var user = userService.getUserById(artisanId);
+        if (user == null || !"ARTISAN".equals(user.getRole())) {
+            throw new IllegalArgumentException("Solo los artesanos pueden crear productos");
+        }
+
+        // Verificar cuota mensual
+        if (!quotaService.canUploadProduct(artisanId)) {
+            throw new IllegalStateException("Has excedido tu límite mensual de productos. Puedes comprar productos adicionales.");
+        }
+
+        // Crear el producto
+        Product product = new Product();
+        String productId = UUID.randomUUID().toString();
+
+        // Información básica
+        product.setId(productId);
+        product.setName(productRequest.getName());
+        product.setDescription(productRequest.getDescription());
+        product.setShortDescription(productRequest.getShortDescription());
+
+        // Precio
+        product.setPrice(productRequest.getPrice());
+        product.setCurrency(productRequest.getCurrency() != null ? productRequest.getCurrency() : "PEN");
+        product.setFormattedPrice(productRequest.getFormattedPrice());
+
+        // Imágenes
+        product.setMainImageUrl(productRequest.getMainImageUrl());
+        product.setAdditionalImages(productRequest.getAdditionalImages());
+
+        // Ubicación
+        product.setOrigin(productRequest.getOrigin());
+        product.setDepartment(productRequest.getDepartment());
+        product.setProvince(productRequest.getProvince());
+        product.setDistrict(productRequest.getDistrict());
+        product.setLatitude(productRequest.getLatitude());
+        product.setLongitude(productRequest.getLongitude());
+
+        // Categorización
+        if (productRequest.getCategory() != null) {
+            for (Product.ProductCategory category : Product.ProductCategory.values()) {
+                if (category.getDisplayName().equals(productRequest.getCategory())) {
+                    product.setCategory(category);
+                    break;
+                }
+            }
+        }
+
+        if (productRequest.getType() != null) {
+            for (Product.ProductType type : Product.ProductType.values()) {
+                if (type.getDisplayName().equals(productRequest.getType())) {
+                    product.setType(type);
+                    break;
+                }
+            }
+        }
+
+        product.setTags(productRequest.getTags());
+        product.setMaterials(productRequest.getMaterials());
+
+        // Artesano
+        product.setArtisanId(artisanId);
+        product.setArtisanName(user.getName());
+        product.setArtisanContact(user.getEmail());
+
+        // Estado
+        product.setIsAvailable(true);
+        product.setStockQuantity(productRequest.getStockQuantity() != null ? productRequest.getStockQuantity() : 1);
+        product.setIsHandmade(productRequest.getIsHandmade() != null ? productRequest.getIsHandmade() : true);
+        product.setCraftingTime(productRequest.getCraftingTime());
+
+        // Métricas iniciales
+        product.setRating(0.0);
+        product.setTotalRatings(0);
+        product.setViewCount(0);
+        product.setPurchaseCount(0);
+
+        // Metadatos
+        product.setCreatedAt(LocalDateTime.now().toString());
+        product.setUpdatedAt(LocalDateTime.now().toString());
+        product.setCreatedBy(artisanId);
+
+        // Guardar en Firestore
+        ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME).document(productId).set(product);
+        WriteResult result = future.get();
+
+        // Registrar en el sistema de cuotas
+        quotaService.recordProductUpload(artisanId);
+
+        log.info("✅ Producto creado exitosamente: {} para artesano: {}. Timestamp: {}",
+                productId, artisanId, result.getUpdateTime());
+
+        return convertToDto(product);
+    }
+
+    /**
+     * Actualizar un producto existente
+     */
+    public ProductDto updateProduct(String productId, String artisanId, ProductDto productRequest)
+            throws ExecutionException, InterruptedException {
+        log.info("🔄 Actualizando producto: {} por artesano: {}", productId, artisanId);
+
+        // Verificar que el producto existe y pertenece al artesano
+        DocumentSnapshot doc = db.collection(COLLECTION_NAME).document(productId).get().get();
+        if (!doc.exists()) {
+            throw new IllegalArgumentException("Producto no encontrado: " + productId);
+        }
+
+        Product existingProduct = doc.toObject(Product.class);
+        if (!artisanId.equals(existingProduct.getArtisanId())) {
+            throw new IllegalArgumentException("No tienes permiso para actualizar este producto");
+        }
+
+        // Actualizar campos modificables
+        existingProduct.setName(productRequest.getName());
+        existingProduct.setDescription(productRequest.getDescription());
+        existingProduct.setShortDescription(productRequest.getShortDescription());
+        existingProduct.setPrice(productRequest.getPrice());
+        existingProduct.setFormattedPrice(productRequest.getFormattedPrice());
+        existingProduct.setMainImageUrl(productRequest.getMainImageUrl());
+        existingProduct.setAdditionalImages(productRequest.getAdditionalImages());
+        existingProduct.setStockQuantity(productRequest.getStockQuantity());
+        existingProduct.setIsAvailable(productRequest.getIsAvailable());
+        existingProduct.setCraftingTime(productRequest.getCraftingTime());
+        existingProduct.setTags(productRequest.getTags());
+        existingProduct.setMaterials(productRequest.getMaterials());
+        existingProduct.setUpdatedAt(LocalDateTime.now().toString());
+
+        // Guardar cambios
+        ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME).document(productId).set(existingProduct);
+        WriteResult result = future.get();
+
+        log.info("✅ Producto actualizado: {}. Timestamp: {}", productId, result.getUpdateTime());
+
+        return convertToDto(existingProduct);
+    }
+
+    /**
+     * Eliminar un producto
+     */
+    public boolean deleteProduct(String productId, String artisanId) throws ExecutionException, InterruptedException {
+        log.info("🗑️ Eliminando producto: {} por artesano: {}", productId, artisanId);
+
+        // Verificar que el producto existe y pertenece al artesano
+        DocumentSnapshot doc = db.collection(COLLECTION_NAME).document(productId).get().get();
+        if (!doc.exists()) {
+            throw new IllegalArgumentException("Producto no encontrado: " + productId);
+        }
+
+        Product product = doc.toObject(Product.class);
+        if (!artisanId.equals(product.getArtisanId())) {
+            throw new IllegalArgumentException("No tienes permiso para eliminar este producto");
+        }
+
+        // Eliminar producto
+        ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME).document(productId).delete();
+        WriteResult result = future.get();
+
+        log.info("✅ Producto eliminado: {}. Timestamp: {}", productId, result.getUpdateTime());
+        return true;
+    }
+
+    /**
+     * Obtener productos destacados (featured)
+     */
+    public List<ProductDto> getFeaturedProducts() throws ExecutionException, InterruptedException {
+        log.info("⭐ Obteniendo productos destacados");
+
+        List<ProductDto> allProducts = getAllProducts();
+
+        // Filtrar productos de artesanos con featured activo
+        List<ProductDto> featuredProducts = new ArrayList<>();
+
+        for (ProductDto product : allProducts) {
+            try {
+                if (quotaService.hasFeaturedPlacement(product.getArtisanId())) {
+                    featuredProducts.add(product);
+                }
+            } catch (Exception e) {
+                log.warn("⚠️ Error verificando featured para artesano {}: {}",
+                        product.getArtisanId(), e.getMessage());
+            }
+        }
+
+        // Ordenar por rating y fecha de actualización
+        featuredProducts.sort((p1, p2) -> {
+            int ratingComparison = Double.compare(p2.getRating(), p1.getRating());
+            if (ratingComparison != 0) return ratingComparison;
+            return p2.getUpdatedAt().compareTo(p1.getUpdatedAt());
+        });
+
+        log.info("✅ Productos destacados encontrados: {}", featuredProducts.size());
+        return featuredProducts;
     }
 
     /**
