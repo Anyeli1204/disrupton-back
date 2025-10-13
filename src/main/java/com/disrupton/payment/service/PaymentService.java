@@ -179,7 +179,7 @@ public class PaymentService {
 
         // Validar montos
         BigDecimal expectedAmount = request.getPaymentType() == PaymentType.PREMIUM_SUBSCRIPTION
-            ? new BigDecimal("20.00") : new BigDecimal("30.00");
+            ? new BigDecimal("10.00") : new BigDecimal("30.00");
 
         if (request.getAmount().compareTo(expectedAmount) != 0) {
             return "Monto incorrecto para la suscripción";

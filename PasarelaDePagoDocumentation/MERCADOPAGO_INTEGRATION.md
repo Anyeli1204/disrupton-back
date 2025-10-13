@@ -9,10 +9,10 @@ Se ha implementado una pasarela de pago completa con MercadoPago para manejar to
 #### Usuario Regular (USER)
 - **Acceso por defecto**: Modelos unimodales, chat con IA Minki, 1 objeto 3D por día, ver 10 objetos 3D por día
 - **Puede pagar por**:
-  - Suscripción Premium (S/20): PREMIUM role
+  - Suscripción Premium (S/10): PREMIUM role
   - Suscripción Premium Max (S/30): PREMIUM_MAX role
 
-#### Usuario Premium (PREMIUM - S/20)
+#### Usuario Premium (PREMIUM - S/10)
 - **Beneficios**: Modelos multimodales 50 requests/día, subir 5 objetos 3D/día, ver 20 objetos 3D/día
 - **Duración**: 30 días
 
@@ -53,7 +53,6 @@ MERCADOPAGO_ENVIRONMENT=sandbox  # sandbox o production
 1. Registrarse en [MercadoPago Developers](https://www.mercadopago.com.pe/developers)
 2. Crear una aplicación
 3. Obtener las credenciales de TEST (sandbox) y PRODUCTION
-4. Para Perú, usar el marketplace de Perú
 
 ### 3. Configurar Webhook
 
@@ -69,7 +68,7 @@ https://tu-dominio.com/api/payments/webhook/mercadopago
 
 ### Pagos de Suscripción
 
-#### Suscripción Premium (S/20)
+#### Suscripción Premium (S/10)
 ```http
 POST /api/payments/subscription/premium
 Authorization: Bearer {jwt_token}
@@ -173,7 +172,7 @@ Authorization: Bearer {jwt_token}
   "preferenceId": "mp_preference_id",
   "paymentType": "PREMIUM_SUBSCRIPTION",
   "status": "PENDING",
-  "amount": 20.00,
+  "amount": 10.00,
   "currency": "PEN",
   "initPoint": "https://www.mercadopago.com/mpe/checkout/start?pref_id=xxx",
   "sandboxInitPoint": "https://sandbox.mercadopago.com/mpe/checkout/start?pref_id=xxx",
@@ -194,7 +193,7 @@ Authorization: Bearer {jwt_token}
 
 ### Suscripciones Premium
 - ✅ Usuario no tiene suscripción activa
-- ✅ Monto correcto (S/20 o S/30)
+- ✅ Monto correcto (S/10 o S/30)
 - ✅ Solo usuarios USER pueden suscribirse
 
 ### Productos/Servicios Adicionales
@@ -218,17 +217,6 @@ userService.checkAndUpdateExpiredPremiumUsers();
 #### Usuarios Próximos a Expirar
 ```java
 List<UserDto> expiring = userService.getUsersWithExpiringPremium(3); // 3 días antes
-```
-
-### Tarea Programada Recomendada
-
-Crear un `@Scheduled` job para ejecutar diariamente:
-
-```java
-@Scheduled(cron = "0 0 2 * * *") // 2 AM diario
-public void checkExpiredPremiumUsers() {
-    userService.checkAndUpdateExpiredPremiumUsers();
-}
 ```
 
 ## Seguridad
@@ -304,7 +292,6 @@ async function createPremiumSubscription() {
   const paymentData = await response.json();
 
   if (paymentData.success) {
-    // Redirigir a MercadoPago
     window.location.href = paymentData.initPoint;
   }
 }
@@ -319,15 +306,6 @@ El sistema actual de `Collaborator` se mantiene para:
 - ✅ **Lógica existente preservada**
 
 El nuevo sistema MercadoPago **complementa** al sistema Collaborator existente, no lo reemplaza.
-
-## Próximos Pasos
-
-1. **Configurar credenciales** reales de MercadoPago
-2. **Implementar tarea programada** para expiración de premium
-3. **Integrar frontend** con endpoints de pago
-4. **Configurar webhook** en entorno de producción
-5. **Implementar notificaciones** de expiración próxima
-6. **Testing completo** en sandbox y producción
 
 ## Soporte
 

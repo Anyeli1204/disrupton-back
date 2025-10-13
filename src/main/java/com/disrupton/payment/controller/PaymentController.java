@@ -138,7 +138,7 @@ public class PaymentController {
 
             PaymentRequest paymentRequest = new PaymentRequest();
             paymentRequest.setPaymentType(com.disrupton.payment.enums.PaymentType.PREMIUM_SUBSCRIPTION);
-            paymentRequest.setAmount(new java.math.BigDecimal("20.00"));
+            paymentRequest.setAmount(new java.math.BigDecimal("10.00"));
             paymentRequest.setCurrency("PEN");
             paymentRequest.setDescription("Suscripción Premium - 30 días");
             paymentRequest.setSuccessUrl(request.get("successUrl"));
