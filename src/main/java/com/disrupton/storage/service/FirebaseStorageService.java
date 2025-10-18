@@ -28,20 +28,19 @@ public class FirebaseStorageService {
      */
     public String uploadModel3D(MultipartFile file, String userId, String modelId) throws IOException {
         log.info("📁 Subiendo modelo 3D: {} para usuario: {}", file.getOriginalFilename(), userId);
-        
+
         String fileName = generateFileName(file.getOriginalFilename(), "models");
         String filePath = String.format("models/%s/%s/%s", userId, modelId, fileName);
-        
+
         BlobId blobId = BlobId.of(bucketName, filePath);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType(file.getContentType())
                 .build();
-        
-        Blob blob = storage.create(blobInfo, file.getBytes());
-        
-        String downloadUrl = blob.getMediaLink();
+
+        // Generar URL pública permanente (sin expiración)
+        String downloadUrl = String.format("https://storage.googleapis.com/%s/%s", bucketName, filePath);
         log.info("✅ Modelo 3D subido exitosamente: {}", downloadUrl);
-        
+
         return downloadUrl;
     }
 
@@ -50,20 +49,21 @@ public class FirebaseStorageService {
      */
     public String uploadThumbnail(MultipartFile file, String userId, String modelId) throws IOException {
         log.info("🖼️ Subiendo thumbnail: {} para usuario: {}", file.getOriginalFilename(), userId);
-        
+
         String fileName = generateFileName(file.getOriginalFilename(), "thumbnails");
         String filePath = String.format("thumbnails/%s/%s/%s", userId, modelId, fileName);
-        
+
         BlobId blobId = BlobId.of(bucketName, filePath);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType(file.getContentType())
                 .build();
-        
+
         Blob blob = storage.create(blobInfo, file.getBytes());
-        
-        String downloadUrl = blob.getMediaLink();
+
+        // Generar URL pública permanente (sin expiración)
+        String downloadUrl = String.format("https://storage.googleapis.com/%s/%s", bucketName, filePath);
         log.info("✅ Thumbnail subido exitosamente: {}", downloadUrl);
-        
+
         return downloadUrl;
     }
 

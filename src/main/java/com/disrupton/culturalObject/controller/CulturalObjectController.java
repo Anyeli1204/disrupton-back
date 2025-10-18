@@ -184,4 +184,5 @@ public class CulturalObjectController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
 }
